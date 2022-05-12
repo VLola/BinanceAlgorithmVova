@@ -1,4 +1,5 @@
 ﻿using Binance.Net.Clients;
+using Binance.Net.Interfaces.Clients.CoinFuturesApi;
 using Binance.Net.Interfaces.Clients.UsdFuturesApi;
 using BinanceAlgorithmVova.Errors;
 using CryptoExchange.Net.Authentication;

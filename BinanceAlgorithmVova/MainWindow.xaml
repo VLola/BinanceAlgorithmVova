@@ -66,8 +66,8 @@
     </Window.Resources>
     <Grid Style="{DynamicResource styleGridMain}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="100*"/>
+            <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30*"/>
@@ -75,7 +75,7 @@
         </Grid.RowDefinitions>
         <Grid>
             <Grid Grid.Column="0" Grid.Row="0">
-                <Grid Visibility="Visible" x:Name="LOGIN_GRID" Style="{DynamicResource styleGrid}">
+                <Grid Visibility="Hidden" x:Name="LOGIN_GRID" Style="{DynamicResource styleGrid}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
@@ -97,8 +97,9 @@
                     <Button Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" Content="Save" Click="Button_Save" Style="{DynamicResource styleButton}"/>
                     <Button Grid.Column="2" Grid.Row="2" Grid.ColumnSpan="2" Content="Login" Click="Button_Login" Style="{DynamicResource styleButton}"/>
                 </Grid>
-                <Grid Visibility="Hidden" x:Name="EXIT_GRID" Style="{DynamicResource styleGrid}">
+                <Grid Visibility="Visible" x:Name="EXIT_GRID" Style="{DynamicResource styleGrid}">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
@@ -119,7 +120,8 @@
                         <TextBlock x:Name="SERVER_TIME" Grid.Column="1" Text="null" Style="{DynamicResource styleTextBlock}"/>
                     </Grid>
                     <ComboBox x:Name="LIST_SYMBOLS" Grid.Column="2" Grid.Row="0" Style="{DynamicResource styleComboBox}"/>
-                    <Button Content="Exit" Grid.Column="3" Grid.Row="0" Click="Exit_Click" Style="{DynamicResource styleButton}"/>
+                    <ComboBox x:Name="INTERVAL_TIME" Grid.Column="3" Grid.Row="0" Style="{DynamicResource styleComboBox}"/>
+                    <Button Content="Exit" Grid.Column="4" Grid.Row="0" Click="Exit_Click" Style="{DynamicResource styleButton}"/>
                     <Grid Grid.Column="0" Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="10*"/>
@@ -128,8 +130,6 @@
                         <Label Grid.Column="0" Content="Online:" Style="{DynamicResource styleLabel}"/>
                         <CheckBox x:Name="ONLINE_CHART" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
                     </Grid>
-
-                    <Button Visibility="Hidden" Content="Refile" Grid.Column="0" Grid.Row="1" Click="Button_Refile" Style="{DynamicResource styleButton}"/>
 
                     <Grid  Grid.Column="1" Grid.Row="1">
                         <Grid.ColumnDefinitions>
@@ -215,6 +215,9 @@
             </Grid.ColumnDefinitions>
             <Button Content="Clear" Click="Button_ClearErrors" Grid.Column="0" Style="{DynamicResource styleButtonLeftBottom}"/>
             <TextBox x:Name="ERROR_LOG" Grid.Column="1" Style="{DynamicResource styleTextBoxErrors}"/>
+        </Grid>
+        <Grid Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Style="{DynamicResource styleGrid}">
+            <WpfPlot Name="plt"/>
         </Grid>
     </Grid>
 </Window>
