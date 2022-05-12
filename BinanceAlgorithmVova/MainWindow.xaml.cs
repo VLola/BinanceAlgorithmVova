@@ -1,4 +1,6 @@
-﻿using BinanceAlgorithmVova.Errors;
+﻿using BinanceAlgorithmVova.Binance;
+using BinanceAlgorithmVova.Errors;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,12 +24,102 @@ namespace BinanceAlgorithmVova
     /// </summary>
     public partial class MainWindow : Window
     {
+        public Socket socket;
         public MainWindow()
         {
             InitializeComponent();
             ErrorWatcher();
         }
 
+
+        #region - Login -
+        private void Button_Save(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string name = CLIENT_NAME.Text;
+                string api = API_KEY.Text;
+                string key = SECRET_KEY.Text;
+                if (name != "" && api != "" && key != "")
+                {
+                    string path = System.IO.Path.Combine(Environment.CurrentDirectory, "clients");
+                    if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+                    if (!File.Exists(path + "/" + CLIENT_NAME.Text))
+                    {
+                        CLIENT_NAME.Text = "";
+                        API_KEY.Text = "";
+                        SECRET_KEY.Text = "";
+                        Client client = new Client(name, api, key);
+                        string json = JsonConvert.SerializeObject(client);
+                        File.WriteAllText(path + "/" + name, json);
+                        Clients();
+                    }
+                }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"Button_Save {c.Message}");
+            }
+        }
+        private void Clients()
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Environment.CurrentDirectory, "clients");
+                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+                List<string> filesDir = (from a in Directory.GetFiles(path) select System.IO.Path.GetFileNameWithoutExtension(a)).ToList();
+                if (filesDir.Count > 0)
+                {
+                    ClientList file_list = new ClientList(filesDir);
+                    BOX_NAME.ItemsSource = file_list.BoxNameContent;
+                    BOX_NAME.SelectedItem = file_list.BoxNameContent[0];
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorText.Add($"Clients {e.Message}");
+            }
+        }
+        private void Button_Login(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string api = API_KEY.Text;
+                string key = SECRET_KEY.Text;
+                if (api != "" && key != "")
+                {
+                    CLIENT_NAME.Text = "";
+                    API_KEY.Text = "";
+                    SECRET_KEY.Text = "";
+                    socket = new Socket(api, key);
+                    Login_Click();
+                }
+                else if (BOX_NAME.Text != "")
+                {
+                    string path = System.IO.Path.Combine(Environment.CurrentDirectory, "clients");
+                    string json = File.ReadAllText(path + "\\" + BOX_NAME.Text);
+                    Client client = JsonConvert.DeserializeObject<Client>(json);
+                    socket = new Socket(client.ApiKey, client.SecretKey);
+                    Login_Click();
+                }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"Button_Login {c.Message}");
+            }
+        }
+        private void Login_Click()
+        {
+            LOGIN_GRID.Visibility = Visibility.Hidden;
+            EXIT_GRID.Visibility = Visibility.Visible;
+        }
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            EXIT_GRID.Visibility = Visibility.Hidden;
+            LOGIN_GRID.Visibility = Visibility.Visible;
+            socket = null;
+        }
+        #endregion
 
         #region - Error -
         // ------------------------------------------------------- Start Error Text Block --------------------------------------

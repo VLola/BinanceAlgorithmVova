@@ -7,8 +7,27 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Window.Resources>
-        <Style x:Key="styleGrid" TargetType="Grid">
+        <Style x:Key="styleGridMain" TargetType="Grid">
             <Setter Property="Background" Value="Gray" />
+        </Style>
+        <Style x:Key="styleGrid" TargetType="Grid">
+            <Setter Property="Background" Value="Black" />
+            <Setter Property="Margin" Value="1" />
+        </Style>
+        <Style x:Key="styleTextBlock" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="styleLabelLeft" TargetType="Label">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style x:Key="styleLabel" TargetType="Label">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style x:Key="styleTextBoxErrors" TargetType="TextBox">
             <Setter Property="Foreground" Value="Gray" />
@@ -17,6 +36,13 @@
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="VerticalScrollBarVisibility" Value="Visible" />
         </Style>
+        <Style x:Key="styleTextBox" TargetType="TextBox">
+            <Setter Property="Margin" Value="5 0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="Background" Value="Black" />
+        </Style>
         <Style x:Key="styleButtonLeftBottom" TargetType="Button">
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -24,8 +50,21 @@
             <Setter Property="Background" Value="DimGray" />
             <Setter Property="Foreground" Value="White" />
         </Style>
+        <Style x:Key="styleButton" TargetType="Button">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="10 0" />
+            <Setter Property="Background" Value="Gray" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style x:Key="styleComboBox" TargetType="ComboBox">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Padding" Value="10 0" />
+            <Setter Property="Foreground" Value="Black" />
+        </Style>
     </Window.Resources>
-    <Grid Style="{DynamicResource styleGrid}">
+    <Grid Style="{DynamicResource styleGridMain}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
@@ -35,17 +74,138 @@
             <RowDefinition Height="100*"/>
         </Grid.RowDefinitions>
         <Grid>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
+            <Grid Grid.Column="0" Grid.Row="0">
+                <Grid Visibility="Visible" x:Name="LOGIN_GRID" Style="{DynamicResource styleGrid}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30*"></RowDefinition>
+                        <RowDefinition Height="30*"></RowDefinition>
+                        <RowDefinition Height="30*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Column="0" Grid.Row="0" Content="ApiKey:" Style="{DynamicResource styleLabel}"/>
+                    <TextBox Grid.Column="1" Grid.Row="0" x:Name="API_KEY" Style="{DynamicResource styleTextBox}"/>
+                    <Label Grid.Column="2" Grid.Row="0" Content="SecretKey:" Style="{DynamicResource styleLabel}"/>
+                    <TextBox Grid.Column="3" Grid.Row="0" x:Name="SECRET_KEY" Style="{DynamicResource styleTextBox}"/>
+                    <Label Grid.Column="0" Grid.Row="1" Content="Name:" Style="{DynamicResource styleLabel}"/>
+                    <TextBox Grid.Column="1" Grid.Row="1" x:Name="CLIENT_NAME" Style="{DynamicResource styleTextBox}"/>
+                    <ComboBox Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2" x:Name="BOX_NAME" Style="{DynamicResource styleComboBox}"/>
+                    <Button Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" Content="Save" Click="Button_Save" Style="{DynamicResource styleButton}"/>
+                    <Button Grid.Column="2" Grid.Row="2" Grid.ColumnSpan="2" Content="Login" Click="Button_Login" Style="{DynamicResource styleButton}"/>
+                </Grid>
+                <Grid Visibility="Hidden" x:Name="EXIT_GRID" Style="{DynamicResource styleGrid}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Content="Start connect" Grid.Column="0" Grid.Row="0" Click="Button_StartConnect" Style="{DynamicResource styleButton}"/>
+                    <Grid  Grid.Column="1" Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Server time:" Style="{DynamicResource styleLabel}"/>
+                        <TextBlock x:Name="SERVER_TIME" Grid.Column="1" Text="null" Style="{DynamicResource styleTextBlock}"/>
+                    </Grid>
+                    <ComboBox x:Name="LIST_SYMBOLS" Grid.Column="2" Grid.Row="0" Style="{DynamicResource styleComboBox}"/>
+                    <Button Content="Exit" Grid.Column="3" Grid.Row="0" Click="Exit_Click" Style="{DynamicResource styleButton}"/>
+                    <Grid Grid.Column="0" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Online:" Style="{DynamicResource styleLabel}"/>
+                        <CheckBox x:Name="ONLINE_CHART" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Button Visibility="Hidden" Content="Refile" Grid.Column="0" Grid.Row="1" Click="Button_Refile" Style="{DynamicResource styleButton}"/>
+
+                    <Grid  Grid.Column="1" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Count candles:" Style="{DynamicResource styleLabel}"/>
+                        <TextBox x:Name="COUNT_CANDLES" Text="100" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                    </Grid>
+                    <Grid Grid.Column="2" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="SMA long:" Style="{DynamicResource styleLabel}"/>
+                        <TextBox x:Name="SMA_LONG" Text="20" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                    </Grid>
+                    <Grid  Grid.Column="3" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="5*"/>
+                                <ColumnDefinition Width="5*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Content="TP:" Style="{DynamicResource styleLabel}"/>
+                            <TextBox x:Name="BOLINGER_TP" Text="60" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="5*"/>
+                                <ColumnDefinition Width="5*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Content="SL:" Style="{DynamicResource styleLabel}"/>
+                            <TextBox x:Name="BOLINGER_SL" Text="30" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                        </Grid>
+                    </Grid>
+                    <Grid Visibility="Hidden" Grid.Column="3" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="SMA short:" Style="{DynamicResource styleLabel}"/>
+                        <TextBox x:Name="SMA_SHORT" Text="2" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                    </Grid>
+
+                    <Grid Grid.Column="1" Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="USDT:" Style="{DynamicResource styleLabel}"/>
+                        <TextBox x:Name="USDT_BET" Text="10" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
+                    </Grid>
+                    <Grid Grid.Column="2" Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="10*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="PRICE:" Style="{DynamicResource styleLabel}"/>
+                        <TextBlock x:Name="PRICE_SUMBOL" Grid.Column="1" Style="{DynamicResource styleTextBlock}"/>
+                    </Grid>
+
+                    <Grid Grid.Column="0" Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="5*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Start bet:" Style="{DynamicResource styleLabel}"/>
+                        <CheckBox x:Name="START_BET" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Button Visibility="Visible" x:Name="STOP_ASYNC" Grid.Column="3" Grid.Row="2" Content="Disconnect" Style="{DynamicResource styleButton}"/>
+                </Grid>
+
             </Grid>
         </Grid>
         <Grid Grid.Column="1" Grid.Row="0">
