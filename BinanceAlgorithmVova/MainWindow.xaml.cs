@@ -5,6 +5,7 @@ using BinanceAlgorithmVova.Binance;
 using BinanceAlgorithmVova.Candlestick;
 using BinanceAlgorithmVova.ConnectDB;
 using BinanceAlgorithmVova.Errors;
+using BinanceAlgorithmVova.Interval;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;
@@ -13,6 +14,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,6 +34,7 @@ namespace BinanceAlgorithmVova
     public partial class MainWindow : Window
     {
         public Socket socket;
+        public IntervalCandles IntervalCandles = new IntervalCandles();
         public List<string> interval = new List<string>();
         public List<string> list_sumbols_name = new List<string>();
         public List<ListCandles> list_listcandles = new List<ListCandles>();
@@ -41,14 +44,16 @@ namespace BinanceAlgorithmVova
         public ScatterPlot bolinger2;
         public ScatterPlot bolinger3;
         public List<BinanceFuturesUsdtTrade> history;
-        public KlineInterval interval_time;
-        public TimeSpan timeSpan;
+        public KlineInterval interval_time = KlineInterval.OneMinute;
+        public TimeSpan timeSpan = new TimeSpan(TimeSpan.TicksPerMinute);
         public MainWindow()
         {
             InitializeComponent();
             ErrorWatcher();
             Chart();
             Clients();
+            INTERVAL_TIME.ItemsSource = IntervalCandles.Intervals;
+            INTERVAL_TIME.SelectedIndex = 0;
             LIST_SYMBOLS.ItemsSource = list_sumbols_name;
             EXIT_GRID.Visibility = Visibility.Hidden;
             LOGIN_GRID.Visibility = Visibility.Visible;
@@ -56,29 +61,19 @@ namespace BinanceAlgorithmVova
             STOP_ASYNC.Click += STOP_ASYNC_Click;
             LIST_SYMBOLS.DropDownClosed += LIST_SYMBOLS_DropDownClosed;
             INTERVAL_TIME.DropDownClosed += INTERVAL_TIME_DropDownClosed;
+
         }
 
-        private void IntervalTime()
-        {
-            interval.Add("OneMinute");
-            interval.Add("ThreeMinutes");
-            interval.Add("FiveMinutes");
-            interval.Add("FifteenMinutes");
-            interval.Add("ThirtyMinutes");
-            interval.Add("OneHour");
-            interval.Add("TwoHour");
-            interval.Add("FourHour");
-            interval.Add("SixHour");
-            interval.Add("EightHour");
-            interval.Add("TwelveHour");
-            interval.Add("OneDay");
-            interval.Add("ThreeDay");
-            interval.Add("OneWeek");
-            interval.Add("OneMonth");
-        }
         private void INTERVAL_TIME_DropDownClosed(object sender, EventArgs e)
         {
-            interval_time = 0;
+            int index = INTERVAL_TIME.SelectedIndex;
+            interval_time = IntervalCandles.Intervals[index].interval;
+            timeSpan = new TimeSpan(IntervalCandles.Intervals[index].timespan);
+            StopAsync();
+            Connect.DeleteAll();
+            LoadCandles();
+            if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
+            startLoadChart();
         }
 
         #region - Event SMA -
@@ -132,7 +127,7 @@ namespace BinanceAlgorithmVova
                     olhc_new = Connect.Get();
                     foreach (OHLC_NEW it in olhc_new)
                     {
-                        list_candle_ohlc.Add(new OHLC(Decimal.ToDouble(it.Open), Decimal.ToDouble(it.High), Decimal.ToDouble(it.Low), Decimal.ToDouble(it.Close), it.DateTime, new TimeSpan(TimeSpan.TicksPerMinute)));
+                        list_candle_ohlc.Add(new OHLC(Decimal.ToDouble(it.Open), Decimal.ToDouble(it.High), Decimal.ToDouble(it.Low), Decimal.ToDouble(it.Close), it.DateTime, timeSpan));
                     }
                     LoadChart();
                 }
@@ -156,7 +151,7 @@ namespace BinanceAlgorithmVova
                 candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
                 candlePlot.YAxisIndex = 1;
 
-                if (SMA_LONG.Text != "" && SMA_SHORT.Text != "")
+                if (SMA_LONG.Text != "")
                 {
                     string text_long = SMA_LONG.Text;
                     int sma_indi_long = Convert.ToInt32(text_long);
@@ -393,11 +388,7 @@ namespace BinanceAlgorithmVova
         #endregion
 
         #region - Server Time -
-        private void Button_StartConnect(object sender, RoutedEventArgs e)
-        {
-            GetServerTime();
-            GetSumbolName();
-        }
+        
         private void GetServerTime()
         {
             try
@@ -465,7 +456,7 @@ namespace BinanceAlgorithmVova
         public void StartKlineAsync()
         {
             StartPriceAsync();
-            socket.socketClient.UsdFuturesStreams.SubscribeToKlineUpdatesAsync(LIST_SYMBOLS.Text, KlineInterval.FiveMinutes, Message =>
+            socket.socketClient.UsdFuturesStreams.SubscribeToKlineUpdatesAsync(LIST_SYMBOLS.Text, interval_time, Message =>
             {
                 Dispatcher.Invoke(new Action(() =>
                 {
@@ -499,7 +490,7 @@ namespace BinanceAlgorithmVova
         {
             try
             {
-                var result = socket.futures.ExchangeData.GetKlinesAsync(symbol: Symbol, interval: KlineInterval.FiveMinutes, startTime: start_time, endTime: end_time, limit: klines_count).Result;
+                var result = socket.futures.ExchangeData.GetKlinesAsync(symbol: Symbol, interval: interval_time, startTime: start_time, endTime: end_time, limit: klines_count).Result;
                 if (!result.Success) ErrorText.Add("Error GetKlinesAsync");
                 else
                 {
@@ -602,12 +593,15 @@ namespace BinanceAlgorithmVova
         {
             LOGIN_GRID.Visibility = Visibility.Hidden;
             EXIT_GRID.Visibility = Visibility.Visible;
+            GetServerTime();
+            GetSumbolName();
         }
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             EXIT_GRID.Visibility = Visibility.Hidden;
             LOGIN_GRID.Visibility = Visibility.Visible;
             socket = null;
+            list_sumbols_name.Clear();
         }
         #endregion
 

@@ -4,6 +4,7 @@ using BinanceAlgorithmVova.Errors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +24,7 @@ namespace BinanceAlgorithmVova.Algorithm
                 if (position_side == PositionSide.Long) side = OrderSide.Sell;
                 else side = OrderSide.Buy;
                 Order(socket, symbol, side, type, quantity, position_side);
+                new SoundPlayer(Properties.Resources.wav_1).Play();
                 return 0;
             }
             else return order_id;
@@ -40,6 +42,7 @@ namespace BinanceAlgorithmVova.Algorithm
             else side = OrderSide.Sell;
 
             long order_id = Order(socket, symbol, side, type, quantity, position_side);
+            if(order_id != 0) new SoundPlayer(Properties.Resources.wav_2).Play();
             return order_id;
         }
         public static long Order(Socket socket, string symbol, OrderSide side, FuturesOrderType type, decimal quantity, PositionSide position_side)

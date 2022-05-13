@@ -112,6 +112,8 @@
     <Compile Include="ConnectDB\Connect.cs" />
     <Compile Include="ConnectDB\OHLC_NEW.cs" />
     <Compile Include="Errors\ErrorText.cs" />
+    <Compile Include="Interval\Interval.cs" />
+    <Compile Include="Interval\IntervalCandles.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -143,6 +145,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Audio\wav_2.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Audio\wav_1.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Audio\wav_3.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
