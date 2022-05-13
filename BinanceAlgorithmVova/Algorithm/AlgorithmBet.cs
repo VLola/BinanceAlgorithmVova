@@ -1,4 +1,7 @@
 ﻿using Binance.Net.Enums;
+using Binance.Net.Interfaces;
+using Binance.Net.Objects.Models.Futures;
+using Binance.Net.Objects.Models.Spot;
 using BinanceAlgorithmVova.Binance;
 using BinanceAlgorithmVova.Errors;
 using System;
@@ -60,6 +63,16 @@ namespace BinanceAlgorithmVova.Algorithm
                 return InfoOrderPositionSide(socket, symbol, order_id);
             }
             return result.Data.PositionSide;
+        }
+        public static List<BinanceFuturesOrder> InfoOrder(Socket socket, string symbol, DateTime start_time)
+        {
+            var result = socket.futures.Trading.GetOrdersAsync(symbol: symbol, startTime: start_time).Result;
+            if (!result.Success)
+            {
+                ErrorText.Add($"InfoOrder: {result.Error.Message}");
+                return InfoOrder(socket, symbol, start_time);
+            }
+            return result.Data.ToList();
         }
     }
 }

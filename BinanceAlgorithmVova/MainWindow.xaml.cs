@@ -43,12 +43,20 @@ namespace BinanceAlgorithmVova
         public ScatterPlot sma_long_plot;
         public ScatterPlot bolinger2;
         public ScatterPlot bolinger3;
+        public ScatterPlot order_long_open_plot;
+        public ScatterPlot order_long_close_plot;
+        public ScatterPlot order_short_open_plot;
+        public ScatterPlot order_short_close_plot;
+        public List<ScatterPlot> order_long_lines_vertical = new List<ScatterPlot>();
+        public List<ScatterPlot> order_long_lines_horisontal = new List<ScatterPlot>();
+        public List<ScatterPlot> order_short_lines_vertical = new List<ScatterPlot>();
+        public List<ScatterPlot> order_short_lines_horisontal = new List<ScatterPlot>();
         public List<BinanceFuturesUsdtTrade> history;
         public KlineInterval interval_time = KlineInterval.OneMinute;
         public TimeSpan timeSpan = new TimeSpan(TimeSpan.TicksPerMinute);
         public MainWindow()
         {
-            InitializeComponent();
+            InitializeComponent(); 
             ErrorWatcher();
             Chart();
             Clients();
@@ -59,12 +67,56 @@ namespace BinanceAlgorithmVova
             LOGIN_GRID.Visibility = Visibility.Visible;
             SMA_LONG.TextChanged += SMA_LONG_TextChanged;
             COUNT_CANDLES.TextChanged += COUNT_CANDLES_TextChanged;
-            STOP_ASYNC.Click += STOP_ASYNC_Click;
-            LIST_SYMBOLS.DropDownClosed += LIST_SYMBOLS_DropDownClosed;
-            INTERVAL_TIME.DropDownClosed += INTERVAL_TIME_DropDownClosed;
+        }
+        List<double> long_open_order_x = new List<double>();
+        List<double> long_open_order_y = new List<double>();
+        List<double> long_close_order_x = new List<double>();
+        List<double> long_close_order_y = new List<double>();
+        List<double> short_open_order_x = new List<double>();
+        List<double> short_open_order_y = new List<double>();
+        List<double> short_close_order_x = new List<double>();
+        List<double> short_close_order_y = new List<double>();
+        private void InfoOrderAsunc(DateTime start_time)
+        {
+            long_open_order_x.Clear();
+            long_open_order_y.Clear();
+            long_close_order_x.Clear();
+            long_close_order_y.Clear();
+            short_open_order_x.Clear();
+            short_open_order_y.Clear();
+            short_close_order_x.Clear();
+            short_close_order_y.Clear();
 
+            string symbol = LIST_SYMBOLS.Text;
+            if (symbol != "")
+            {
+                foreach (var it in Algorithm.AlgorithmBet.InfoOrder(socket, symbol, start_time))
+                {
+                    if(it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
+                    {
+                        long_open_order_x.Add(it.CreateTime.ToOADate());
+                        long_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                    }
+                    else if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
+                    {
+                        long_close_order_x.Add(it.CreateTime.ToOADate());
+                        long_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                    }
+                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
+                    {
+                        short_open_order_x.Add(it.CreateTime.ToOADate());
+                        short_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                    }
+                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
+                    {
+                        short_close_order_x.Add(it.CreateTime.ToOADate());
+                        short_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                    }
+                }
+            }
         }
 
+        #region - Event Text Changed -
         private void COUNT_CANDLES_TextChanged(object sender, TextChangedEventArgs e)
         {
             string text_long = SMA_LONG.Text;
@@ -93,34 +145,13 @@ namespace BinanceAlgorithmVova
             if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
             startLoadChart();
         }
+        #endregion
 
         #region - Event SMA -
 
         private void SMA_LONG_TextChanged(object sender, TextChangedEventArgs e)
         {
-
-            string text_long = SMA_LONG.Text;
-            string count_candles = COUNT_CANDLES.Text;
-            if (text_long != "" && count_candles != "")
-            {
-                int sma_indi_long = Convert.ToInt32(text_long);
-                if (sma_indi_long > 1 && sma_indi_long < Convert.ToInt32(count_candles))
-                {
-                    plt.Plot.Remove(sma_long_plot);
-                    plt.Plot.Remove(bolinger2);
-                    plt.Plot.Remove(bolinger3);
-                    sma_long = candlePlot.GetBollingerBands(sma_indi_long);
-                    sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: text_long + " minute SMA");
-                    sma_long_plot.YAxisIndex = 1;
-                    bolinger2 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
-                    bolinger2.YAxisIndex = 1;
-                    bolinger3 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
-                    bolinger3.YAxisIndex = 1;
-                    plt.Refresh();
-
-                    StartAlgorithm();
-                }
-            }
+            LoadChart();
         }
         #endregion
 
@@ -149,6 +180,7 @@ namespace BinanceAlgorithmVova
                     {
                         list_candle_ohlc.Add(new OHLC(Decimal.ToDouble(it.Open), Decimal.ToDouble(it.High), Decimal.ToDouble(it.Low), Decimal.ToDouble(it.Close), it.DateTime, timeSpan));
                     }
+                    InfoOrderAsunc(list_candle_ohlc[0].DateTime);
                     LoadChart();
                 }
             }
@@ -161,39 +193,99 @@ namespace BinanceAlgorithmVova
         public (double[] xs, double[] ys, double[] lower, double[] upper) sma_long;
         private void LoadChart()
         {
-            try
+            string text_long = SMA_LONG.Text;
+            string count_candles = COUNT_CANDLES.Text;
+            if (text_long != "" && count_candles != "")
             {
-                plt.Plot.Remove(candlePlot);
-                plt.Plot.Remove(sma_long_plot);
-                plt.Plot.Remove(bolinger2);
-                plt.Plot.Remove(bolinger3);
-
-                candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
-                candlePlot.YAxisIndex = 1;
-
-                if (SMA_LONG.Text != "")
+                int sma_indi_long = Convert.ToInt32(text_long);
+                if (sma_indi_long > 1 && sma_indi_long < Convert.ToInt32(count_candles))
                 {
-                    string text_long = SMA_LONG.Text;
-                    int sma_indi_long = Convert.ToInt32(text_long);
-                    if (sma_indi_long > 1)
+                    plt.Plot.Remove(candlePlot);
+                    plt.Plot.Remove(sma_long_plot);
+                    plt.Plot.Remove(order_long_open_plot);
+                    plt.Plot.Remove(order_long_close_plot);
+                    plt.Plot.Remove(order_short_open_plot);
+                    plt.Plot.Remove(order_short_close_plot);
+                    if (order_long_lines_vertical.Count > 0) foreach (var it in order_long_lines_vertical) plt.Plot.Remove(it);
+                    if (order_long_lines_horisontal.Count > 0) foreach (var it in order_long_lines_horisontal) plt.Plot.Remove(it);
+                    if (order_short_lines_vertical.Count > 0) foreach (var it in order_short_lines_vertical) plt.Plot.Remove(it);
+                    if (order_short_lines_horisontal.Count > 0) foreach(var it in order_short_lines_horisontal) plt.Plot.Remove(it);
+                    plt.Plot.Remove(bolinger2);
+                    plt.Plot.Remove(bolinger3);
+                    candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
+                    candlePlot.YAxisIndex = 1;
+                    sma_long = candlePlot.GetBollingerBands(sma_indi_long);
+                    sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: text_long + " minute SMA");
+                    sma_long_plot.YAxisIndex = 1;
+                    bolinger2 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
+                    bolinger2.YAxisIndex = 1;
+                    bolinger3 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
+                    bolinger3.YAxisIndex = 1;
+                    if (long_close_order_x.Count != 0 && long_close_order_y.Count != 0)
                     {
-                        sma_long = candlePlot.GetBollingerBands(sma_indi_long);
-                        sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: text_long + " minute SMA");
-                        sma_long_plot.YAxisIndex = 1;
-                        bolinger2 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
-                        bolinger2.YAxisIndex = 1;
-                        bolinger3 = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
-                        bolinger3.YAxisIndex = 1;
-                        StartAlgorithm();
+                        order_long_close_plot = plt.Plot.AddScatter(long_close_order_x.ToArray(), long_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
+                        order_long_close_plot.YAxisIndex = 1;
+                        order_long_lines_vertical.Clear();
+                        for (int i = 0; i < long_close_order_x.Count; i++)
+                        {
+                            double[] x = { long_open_order_x[i], long_open_order_x[i] };
+                            double[] y = { long_open_order_y[i], long_close_order_y[i] };
+                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                            scatter.YAxisIndex = 1;
+                            order_long_lines_vertical.Add(scatter);
+                        }
+                        order_long_lines_horisontal.Clear();
+                        for (int i = 0; i < long_close_order_x.Count; i++)
+                        {
+                            double[] x = { long_open_order_x[i], long_close_order_x[i] };
+                            double[] y = { long_close_order_y[i], long_close_order_y[i] };
+                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                            scatter.YAxisIndex = 1;
+                            order_long_lines_horisontal.Add(scatter);
+                        }
                     }
+                    if (long_open_order_x.Count != 0 && long_open_order_y.Count != 0)
+                    {
+                        order_long_open_plot = plt.Plot.AddScatter(long_open_order_x.ToArray(), long_open_order_y.ToArray(), color: Color.Green, lineWidth: 0, markerSize: 8);
+                        order_long_open_plot.YAxisIndex = 1;
+                    }
+                    if (short_close_order_x.Count != 0 && short_close_order_y.Count != 0)
+                    {
+                        order_short_close_plot = plt.Plot.AddScatter(short_close_order_x.ToArray(), short_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
+                        order_short_close_plot.YAxisIndex = 1;
+                        order_short_lines_vertical.Clear();
+                        for (int i = 0; i < short_close_order_x.Count; i++)
+                        {
+                            double[] x = { short_close_order_x[i], short_close_order_x[i] };
+                            double[] y = { short_open_order_y[i], short_close_order_y[i] };
+                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                            scatter.YAxisIndex = 1;
+                            order_short_lines_vertical.Add(scatter);
+                        }
+                        order_short_lines_horisontal.Clear();
+                        for (int i = 0; i < short_close_order_x.Count; i++)
+                        {
+                            double[] x = { short_open_order_x[i], short_close_order_x[i] };
+                            double[] y = { short_open_order_y[i], short_open_order_y[i] };
+                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                            scatter.YAxisIndex = 1;
+                            order_short_lines_horisontal.Add(scatter);
+                        }
+                    }
+                    if (short_open_order_x.Count != 0 && short_open_order_y.Count != 0)
+                    {
+                        order_short_open_plot = plt.Plot.AddScatter(short_open_order_x.ToArray(), short_open_order_y.ToArray(), color: Color.DarkRed, lineWidth: 0, markerSize: 8);
+                        order_short_open_plot.YAxisIndex = 1;
+                    }
+
+
+
+                    StartAlgorithm();
+                    plt.Refresh();
                 }
-                plt.Refresh();
-            }
-            catch (Exception e)
-            {
-                ErrorText.Add($"LoadChart {e.Message}");
             }
         }
+        
         #endregion
 
         #region - Algorithm -
