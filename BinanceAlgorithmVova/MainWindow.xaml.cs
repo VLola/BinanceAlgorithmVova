@@ -58,10 +58,28 @@ namespace BinanceAlgorithmVova
             EXIT_GRID.Visibility = Visibility.Hidden;
             LOGIN_GRID.Visibility = Visibility.Visible;
             SMA_LONG.TextChanged += SMA_LONG_TextChanged;
+            COUNT_CANDLES.TextChanged += COUNT_CANDLES_TextChanged;
             STOP_ASYNC.Click += STOP_ASYNC_Click;
             LIST_SYMBOLS.DropDownClosed += LIST_SYMBOLS_DropDownClosed;
             INTERVAL_TIME.DropDownClosed += INTERVAL_TIME_DropDownClosed;
 
+        }
+
+        private void COUNT_CANDLES_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string text_long = SMA_LONG.Text;
+            string count_candles = COUNT_CANDLES.Text;
+            if (text_long != "" && count_candles != "")
+            {
+                if (Convert.ToInt32(count_candles) > Convert.ToInt32(text_long) && Convert.ToInt32(count_candles) < 500)
+                {
+                    StopAsync();
+                    Connect.DeleteAll();
+                    LoadCandles();
+                    if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
+                    startLoadChart();
+                }
+            }
         }
 
         private void INTERVAL_TIME_DropDownClosed(object sender, EventArgs e)
@@ -80,11 +98,13 @@ namespace BinanceAlgorithmVova
 
         private void SMA_LONG_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (SMA_LONG.Text != "")
+
+            string text_long = SMA_LONG.Text;
+            string count_candles = COUNT_CANDLES.Text;
+            if (text_long != "" && count_candles != "")
             {
-                string text_long = SMA_LONG.Text;
                 int sma_indi_long = Convert.ToInt32(text_long);
-                if (sma_indi_long > 1)
+                if (sma_indi_long > 1 && sma_indi_long < Convert.ToInt32(count_candles))
                 {
                     plt.Plot.Remove(sma_long_plot);
                     plt.Plot.Remove(bolinger2);
@@ -217,11 +237,22 @@ namespace BinanceAlgorithmVova
         {
             try
             {
-                double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
-                double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                double price = (price_bolinger - price_sma) / 100 * Double.Parse(BOLINGER_TP.Text) + price_sma;
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
+                string bolinger_text = BOLINGER_TP.Text;
+                if(bolinger_text != "")
+                {
+                    double bolinger_text_double = Double.Parse(bolinger_text);
+                    if(bolinger_text_double > 0)
+                    {
+                        double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
+                        double price_sma = sma_long.ys[sma_long.ys.Length - 1];
+                        double price = (price_bolinger - price_sma) / 100 * bolinger_text_double + price_sma;
+                        if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
+                        else return false;
+                    }
+                    else return false;
+                }
                 else return false;
+
             }
             catch (Exception c)
             {
@@ -233,11 +264,22 @@ namespace BinanceAlgorithmVova
         {
             try
             {
-                double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
-                double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                double price = price_sma - (price_sma - price_bolinger) / 100 * Double.Parse(BOLINGER_SL.Text);
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
+                string bolinger_text = BOLINGER_SL.Text;
+                if (bolinger_text != "")
+                {
+                    double bolinger_text_double = Double.Parse(bolinger_text);
+                    if (bolinger_text_double > 0)
+                    {
+                        double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
+                        double price_sma = sma_long.ys[sma_long.ys.Length - 1];
+                        double price = price_sma - (price_sma - price_bolinger) / 100 * bolinger_text_double;
+                        if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
+                        else return false;
+                    }
+                    else return false;
+                }
                 else return false;
+
             }
             catch (Exception c)
             {
@@ -249,10 +291,20 @@ namespace BinanceAlgorithmVova
         {
             try
             {
-                double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
-                double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                double price = price_sma - (price_sma - price_bolinger) / 100 * Double.Parse(BOLINGER_TP.Text);
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
+                string bolinger_text = BOLINGER_TP.Text;
+                if (bolinger_text != "")
+                {
+                    double bolinger_text_double = Double.Parse(bolinger_text);
+                    if (bolinger_text_double > 0)
+                    {
+                        double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
+                        double price_sma = sma_long.ys[sma_long.ys.Length - 1];
+                        double price = price_sma - (price_sma - price_bolinger) / 100 * bolinger_text_double;
+                        if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
+                        else return false;
+                    }
+                    else return false;
+                }
                 else return false;
             }
             catch (Exception c)
@@ -265,10 +317,20 @@ namespace BinanceAlgorithmVova
         {
             try
             {
-                double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
-                double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                double price = (price_bolinger - price_sma) / 100 * Double.Parse(BOLINGER_SL.Text) + price_sma;
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
+                string bolinger_text = BOLINGER_SL.Text;
+                if (bolinger_text != "")
+                {
+                    double bolinger_text_double = Double.Parse(bolinger_text);
+                    if (bolinger_text_double > 0)
+                    {
+                        double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
+                        double price_sma = sma_long.ys[sma_long.ys.Length - 1];
+                        double price = (price_bolinger - price_sma) / 100 * bolinger_text_double + price_sma;
+                        if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
+                        else return false;
+                    }
+                    else return false;
+                }
                 else return false;
             }
             catch (Exception c)
@@ -324,11 +386,22 @@ namespace BinanceAlgorithmVova
                 }
                 if (START_BET.IsChecked == true && ONLINE_CHART.IsChecked == true && start && order_id == 0)
                 {
-                    quantity = Math.Round(Decimal.Parse(USDT_BET.Text) / Decimal.Parse(PRICE_SUMBOL.Text), 1);
+                    string usdt_bet = USDT_BET.Text;
+                    string price_symbol = PRICE_SYMBOL.Text;
+                    if(usdt_bet != "" && price_symbol != "")
+                    {
+                        decimal usdt = Decimal.Parse(usdt_bet);
+                        decimal price = Decimal.Parse(price_symbol);
+                        if(usdt > 0m && price > 0m)
+                        {
+                            quantity = Math.Round(usdt / price, 1);
 
-                    order_id = Algorithm.AlgorithmBet.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys[sma_long.ys.Length - 1]);
+                            order_id = Algorithm.AlgorithmBet.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys[sma_long.ys.Length - 1]);
 
-                    if (order_id != 0) start = false;
+                            if (order_id != 0) start = false;
+                        }
+                    }
+                    
                 }
             }
             catch (Exception c)
@@ -385,27 +458,6 @@ namespace BinanceAlgorithmVova
             }
         }
 
-        #endregion
-
-        #region - Server Time -
-        
-        private void GetServerTime()
-        {
-            try
-            {
-                var result = socket.futures.ExchangeData.GetServerTimeAsync().Result;
-                if (!result.Success) ErrorText.Add("Error GetServerTimeAsync");
-                else
-                {
-                    SERVER_TIME.Text = result.Data.ToShortTimeString();
-                }
-            }
-
-            catch (Exception e)
-            {
-                ErrorText.Add($"GetServerTime {e.Message}");
-            }
-        }
         #endregion
 
         #region - Chart -
@@ -479,7 +531,7 @@ namespace BinanceAlgorithmVova
             {
                 Dispatcher.Invoke(new Action(() =>
                 {
-                    PRICE_SUMBOL.Text = Message.Data.MarkPrice.ToString();
+                    PRICE_SYMBOL.Text = Message.Data.MarkPrice.ToString();
                 }));
             });
         }
@@ -593,7 +645,6 @@ namespace BinanceAlgorithmVova
         {
             LOGIN_GRID.Visibility = Visibility.Hidden;
             EXIT_GRID.Visibility = Visibility.Visible;
-            GetServerTime();
             GetSumbolName();
         }
         private void Exit_Click(object sender, RoutedEventArgs e)
