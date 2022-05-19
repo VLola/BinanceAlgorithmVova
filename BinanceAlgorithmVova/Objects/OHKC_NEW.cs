@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace BinanceAlgorithmVova.ConnectDB
+namespace BinanceAlgorithmVova.Objects
 {
     public class OHLC_NEW
     {

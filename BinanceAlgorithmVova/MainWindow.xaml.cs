@@ -1,44 +1,34 @@
-﻿using Binance.Net.Enums;
-using Binance.Net.Objects.Models.Futures;
-using Binance.Net.Objects.Models.Spot;
-using BinanceAlgorithmVova.Binance;
-using BinanceAlgorithmVova.Candlestick;
-using BinanceAlgorithmVova.ConnectDB;
+﻿using BinanceAlgorithmVova.Binance;
 using BinanceAlgorithmVova.Errors;
-using BinanceAlgorithmVova.Interval;
-using Newtonsoft.Json;
-using ScottPlot;
-using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Media;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Newtonsoft.Json;
+using Binance.Net.Enums;
+using ScottPlot;
+using System.Drawing;
+using Binance.Net.Objects.Models.Spot;
+using ScottPlot.Plottable;
+using BinanceAlgorithmVova.ConnectDB;
+using System.Windows.Threading;
+using Binance.Net.Objects.Models.Futures;
+using BinanceAlgorithmVova.Interval;
+using BinanceAlgorithmVova.Model;
+using BinanceAlgorithmVova.Objects;
+using Binance.Net.Objects.Models.Futures.Socket;
 
 namespace BinanceAlgorithmVova
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public Socket socket;
         public IntervalCandles IntervalCandles = new IntervalCandles();
         public List<string> interval = new List<string>();
         public List<string> list_sumbols_name = new List<string>();
-        public List<ListCandles> list_listcandles = new List<ListCandles>();
-        public List<FullListCandles> full_list_candles = new List<FullListCandles>();
         public FinancePlot candlePlot;
         public ScatterPlot sma_long_plot;
         public ScatterPlot bolinger2;
@@ -54,12 +44,14 @@ namespace BinanceAlgorithmVova
         public List<BinanceFuturesUsdtTrade> history;
         public KlineInterval interval_time = KlineInterval.OneMinute;
         public TimeSpan timeSpan = new TimeSpan(TimeSpan.TicksPerMinute);
+        public List<HistoryOrder> history_order = new List<HistoryOrder>();
         public MainWindow()
         {
-            InitializeComponent(); 
+            InitializeComponent();
             ErrorWatcher();
             Chart();
             Clients();
+            HISTORY_ORDER.ItemsSource = history_order;
             INTERVAL_TIME.ItemsSource = IntervalCandles.Intervals;
             INTERVAL_TIME.SelectedIndex = 0;
             LIST_SYMBOLS.ItemsSource = list_sumbols_name;
@@ -67,7 +59,124 @@ namespace BinanceAlgorithmVova
             LOGIN_GRID.Visibility = Visibility.Visible;
             SMA_LONG.TextChanged += SMA_LONG_TextChanged;
             COUNT_CANDLES.TextChanged += COUNT_CANDLES_TextChanged;
+            TAB_CONTROL.MouseLeftButtonUp += TAB_CONTROL_MouseLeftButtonUp;
+
+            //Create Table BinanceFuturesOrders
+            using (ModelBinanceFuturesOrder context = new ModelBinanceFuturesOrder())
+            {
+                context.BinanceFuturesOrders.Create();
+            }
+            //Create Table HistoryOrders
+            using (ModelHistoryOrder context = new ModelHistoryOrder())
+            {
+                context.HistoryOrders.Create();
+            }
         }
+        public decimal quantity_bet;
+        public long bet_order_id = 0;
+        private void LongBet_Click(object sender, RoutedEventArgs e)
+        {
+            string symbol = LIST_SYMBOLS.Text;
+            string usdt_bet = USDT_BET.Text;
+            string price_symbol = PRICE_SYMBOL.Text;
+            if (usdt_bet != "" && price_symbol != "" && bet_order_id == 0)
+            {
+                decimal usdt = Decimal.Parse(usdt_bet);
+                decimal price = Decimal.Parse(price_symbol);
+                if (usdt > 0m && price > 0m)
+                {
+                    quantity_bet = Math.Round(usdt / price, 1);
+                    bet_order_id = Algorithm.Algorithm.OpenOrder(socket, symbol, quantity_bet, PositionSide.Long);
+                }
+            }
+        }
+        private void ShortBet_Click(object sender, RoutedEventArgs e)
+        {
+            string symbol = LIST_SYMBOLS.Text;
+            string usdt_bet = USDT_BET.Text;
+            string price_symbol = PRICE_SYMBOL.Text;
+            if (usdt_bet != "" && price_symbol != "" && bet_order_id == 0)
+            {
+                decimal usdt = Decimal.Parse(usdt_bet);
+                decimal price = Decimal.Parse(price_symbol);
+                if (usdt > 0m && price > 0m)
+                {
+                    quantity_bet = Math.Round(usdt / price, 1);
+                    bet_order_id = Algorithm.Algorithm.OpenOrder(socket, symbol, quantity_bet, PositionSide.Short);
+                }
+            }
+        }
+        private void CloseOrder_Click(object sender, RoutedEventArgs e)
+        {
+            string symbol = LIST_SYMBOLS.Text;
+            if (bet_order_id != 0) bet_order_id = Algorithm.Algorithm.CloseOrder(socket, symbol, bet_order_id, quantity_bet);
+        }
+        //private void StartPnlAsync()
+        //{
+        //    var listenKey = socket.futures.Account.StartUserStreamAsync().Result;
+        //    if (!listenKey.Success) ErrorText.Add($"Failed to start user stream: {listenKey.Error.Message}");
+        //    var result = socket.futuresSocket.SubscribeToUserDataUpdatesAsync(listenKey: listenKey.Data,
+        //        onLeverageUpdate => { },
+        //        onMarginUpdate => { },
+        //        onAccountUpdate => {
+        //            Dispatcher.Invoke(new Action(() => {
+        //                //List<BinanceFuturesStreamPosition> list = onAccountUpdate.Data.UpdateData.Positions.ToList();
+        //                //if(list.Count > 0)
+        //                //{
+        //                //    decimal pnl = list[list.Count - 1].;
+        //                //    PNL.Text = pnl.ToString();
+        //                //}
+        //                string json = JsonConvert.SerializeObject(onAccountUpdate.Data.UpdateData.Positions.ToList());
+        //                ErrorText.Add(json);
+        //            }));
+        //        },
+        //        onOrderUpdate => { },
+        //        onListenKeyExpired => { }
+        //        ).Result;
+        //    if (!result.Success) ErrorText.Add($"Failed StartPnlAsync: {result.Error.Message}");
+        //}
+
+        #region - Trede History -
+        private void TAB_CONTROL_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            History();
+            double sum_total = 0;
+            int count_orders = 0;
+            foreach (var it in ConnectHistoryOrder.Get())
+            {
+                history_order.Insert(0, it);
+                sum_total += it.total;
+                count_orders++;
+            }
+            COUNT_ORDERS.Content = count_orders;
+            SUM_TOTAL.Content = sum_total;
+            if (sum_total > 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Green;
+            else if (sum_total < 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Red;
+            HISTORY_ORDER.Items.Refresh();
+        }
+
+        private void History()
+        {
+            history_order.Clear();
+            ConnectHistoryOrder.DeleteAll();
+            List<BinanceFuturesOrder> orders = ConnectOrder.Get();
+            int i = 0;
+            foreach (var it in ConnectOrder.Get())
+            {
+                if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
+                {
+                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(orders[i - 1].QuoteQuantityFilled), Convert.ToDouble(it.QuoteQuantityFilled), it.PositionSide));
+                }
+                else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
+                {
+                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(orders[i - 1].QuoteQuantityFilled), Convert.ToDouble(it.QuoteQuantityFilled), it.PositionSide));
+                }
+                i++;
+            }
+        }
+        #endregion
+
+        #region - Coordinate Orders -
         List<double> long_open_order_x = new List<double>();
         List<double> long_open_order_y = new List<double>();
         List<double> long_close_order_x = new List<double>();
@@ -86,35 +195,44 @@ namespace BinanceAlgorithmVova
             short_open_order_y.Clear();
             short_close_order_x.Clear();
             short_close_order_y.Clear();
-
+            bool check_one = false;
             string symbol = LIST_SYMBOLS.Text;
             if (symbol != "")
             {
+                ConnectOrder.DeleteAll();
                 foreach (var it in Algorithm.AlgorithmBet.InfoOrder(socket, symbol, start_time))
                 {
-                    if(it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
+
+                    if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
                     {
                         long_open_order_x.Add(it.CreateTime.ToOADate());
                         long_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                        check_one = true;
+                        ConnectOrder.Insert(it);
                     }
-                    else if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
+                    else if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell && check_one)
                     {
                         long_close_order_x.Add(it.CreateTime.ToOADate());
                         long_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                        ConnectOrder.Insert(it);
                     }
                     else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
                     {
                         short_open_order_x.Add(it.CreateTime.ToOADate());
                         short_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                        check_one = true;
+                        ConnectOrder.Insert(it);
                     }
-                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
+                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy && check_one)
                     {
                         short_close_order_x.Add(it.CreateTime.ToOADate());
                         short_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                        ConnectOrder.Insert(it);
                     }
                 }
             }
         }
+        #endregion
 
         #region - Event Text Changed -
         private void COUNT_CANDLES_TextChanged(object sender, TextChangedEventArgs e)
@@ -125,11 +243,7 @@ namespace BinanceAlgorithmVova
             {
                 if (Convert.ToInt32(count_candles) > Convert.ToInt32(text_long) && Convert.ToInt32(count_candles) < 500)
                 {
-                    StopAsync();
-                    Connect.DeleteAll();
-                    LoadCandles();
-                    if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
-                    startLoadChart();
+                    Reload();
                 }
             }
         }
@@ -139,11 +253,7 @@ namespace BinanceAlgorithmVova
             int index = INTERVAL_TIME.SelectedIndex;
             interval_time = IntervalCandles.Intervals[index].interval;
             timeSpan = new TimeSpan(IntervalCandles.Intervals[index].timespan);
-            StopAsync();
-            Connect.DeleteAll();
-            LoadCandles();
-            if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
-            startLoadChart();
+            Reload();
         }
         #endregion
 
@@ -160,10 +270,18 @@ namespace BinanceAlgorithmVova
         public List<OHLC> list_candle_ohlc = new List<OHLC>();
         private void LIST_SYMBOLS_DropDownClosed(object sender, EventArgs e)
         {
+            Reload();
+        }
+        private void Reload()
+        {
             StopAsync();
-            Connect.DeleteAll();
+            ConnectOHLC_NEW.DeleteAll();
             LoadCandles();
-            if (ONLINE_CHART.IsChecked == true) StartKlineAsync();
+            if (ONLINE_CHART.IsChecked == true) 
+            { 
+                StartKlineAsync();
+                //StartPnlAsync();
+            }
             startLoadChart();
         }
         private void startLoadChart()
@@ -175,7 +293,7 @@ namespace BinanceAlgorithmVova
                 {
                     list_candle_ohlc.Clear();
                     List<OHLC_NEW> olhc_new = new List<OHLC_NEW>();
-                    olhc_new = Connect.Get();
+                    olhc_new = ConnectOHLC_NEW.Get();
                     foreach (OHLC_NEW it in olhc_new)
                     {
                         list_candle_ohlc.Add(new OHLC(Decimal.ToDouble(it.Open), Decimal.ToDouble(it.High), Decimal.ToDouble(it.Low), Decimal.ToDouble(it.Close), it.DateTime, timeSpan));
@@ -209,7 +327,7 @@ namespace BinanceAlgorithmVova
                     if (order_long_lines_vertical.Count > 0) foreach (var it in order_long_lines_vertical) plt.Plot.Remove(it);
                     if (order_long_lines_horisontal.Count > 0) foreach (var it in order_long_lines_horisontal) plt.Plot.Remove(it);
                     if (order_short_lines_vertical.Count > 0) foreach (var it in order_short_lines_vertical) plt.Plot.Remove(it);
-                    if (order_short_lines_horisontal.Count > 0) foreach(var it in order_short_lines_horisontal) plt.Plot.Remove(it);
+                    if (order_short_lines_horisontal.Count > 0) foreach (var it in order_short_lines_horisontal) plt.Plot.Remove(it);
                     plt.Plot.Remove(bolinger2);
                     plt.Plot.Remove(bolinger3);
                     candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
@@ -282,16 +400,17 @@ namespace BinanceAlgorithmVova
 
                     StartAlgorithm();
                     plt.Refresh();
+                    //plt.Render();
                 }
             }
         }
-        
+
         #endregion
 
         #region - Algorithm -
         public long order_id = 0;
         decimal quantity;
-        public bool start;
+        public bool start = false;
         public bool position;
         public bool temp_position;
         public bool start_programm = true;
@@ -330,10 +449,10 @@ namespace BinanceAlgorithmVova
             try
             {
                 string bolinger_text = BOLINGER_TP.Text;
-                if(bolinger_text != "")
+                if (bolinger_text != "")
                 {
                     double bolinger_text_double = Double.Parse(bolinger_text);
-                    if(bolinger_text_double > 0)
+                    if (bolinger_text_double > 0)
                     {
                         double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
                         double price_sma = sma_long.ys[sma_long.ys.Length - 1];
@@ -480,20 +599,20 @@ namespace BinanceAlgorithmVova
                 {
                     string usdt_bet = USDT_BET.Text;
                     string price_symbol = PRICE_SYMBOL.Text;
-                    if(usdt_bet != "" && price_symbol != "")
+                    if (usdt_bet != "" && price_symbol != "")
                     {
                         decimal usdt = Decimal.Parse(usdt_bet);
                         decimal price = Decimal.Parse(price_symbol);
-                        if(usdt > 0m && price > 0m)
+                        if (usdt > 0m && price > 0m)
                         {
                             quantity = Math.Round(usdt / price, 1);
 
                             order_id = Algorithm.AlgorithmBet.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys[sma_long.ys.Length - 1]);
-
+                            
                             if (order_id != 0) start = false;
                         }
                     }
-                    
+
                 }
             }
             catch (Exception c)
@@ -604,13 +723,13 @@ namespace BinanceAlgorithmVova
             {
                 Dispatcher.Invoke(new Action(() =>
                 {
-                    if (ohlc_item.DateTime == Message.Data.Data.OpenTime) Connect.Delete(Id);
+                    if (ohlc_item.DateTime == Message.Data.Data.OpenTime) ConnectOHLC_NEW.Delete(Id);
                     ohlc_item.DateTime = Message.Data.Data.OpenTime;
                     ohlc_item.Open = Message.Data.Data.OpenPrice;
                     ohlc_item.High = Message.Data.Data.HighPrice;
                     ohlc_item.Low = Message.Data.Data.LowPrice;
                     ohlc_item.Close = Message.Data.Data.ClosePrice;
-                    Id = Convert.ToInt32(Connect.Insert(ohlc_item));
+                    Id = Convert.ToInt32(ConnectOHLC_NEW.Insert(ohlc_item));
                     startLoadChart();
                 }));
             });
@@ -645,7 +764,7 @@ namespace BinanceAlgorithmVova
                         ohlc_item.High = it.HighPrice;
                         ohlc_item.Low = it.LowPrice;
                         ohlc_item.Close = it.ClosePrice;
-                        Id = Convert.ToInt32(Connect.Insert(ohlc_item));
+                        Id = Convert.ToInt32(ConnectOHLC_NEW.Insert(ohlc_item));
                     }
                 }
             }
@@ -776,5 +895,6 @@ namespace BinanceAlgorithmVova
         }
         // ------------------------------------------------------- End Error Text Block ----------------------------------------
         #endregion
+
     }
 }

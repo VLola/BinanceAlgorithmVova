@@ -47,6 +47,12 @@
     <Reference Include="Dapper.Contrib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.Contrib.2.0.78\lib\net461\Dapper.Contrib.dll</HintPath>
     </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=3.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.3.1.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
@@ -63,6 +69,7 @@
       <HintPath>..\packages\ScottPlot.WPF.4.1.45\lib\net472\ScottPlot.WPF.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Drawing.Common, Version=4.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -73,6 +80,8 @@
       <Private>True</Private>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -98,6 +107,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="Algorithm\Algorithm.cs" />
     <Compile Include="Algorithm\AlgorithmBet.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
@@ -106,11 +116,9 @@
     <Compile Include="Binance\Client.cs" />
     <Compile Include="Binance\ClientList.cs" />
     <Compile Include="Binance\Socket.cs" />
-    <Compile Include="Candlestick\Candle.cs" />
-    <Compile Include="Candlestick\FullListCandles.cs" />
-    <Compile Include="Candlestick\ListCandles.cs" />
-    <Compile Include="ConnectDB\Connect.cs" />
-    <Compile Include="ConnectDB\OHLC_NEW.cs" />
+    <Compile Include="ConnectDB\ConnectHistoryOrder.cs" />
+    <Compile Include="ConnectDB\ConnectOHLC_NEW.cs" />
+    <Compile Include="ConnectDB\ConnectOrder.cs" />
     <Compile Include="Errors\ErrorText.cs" />
     <Compile Include="Interval\Interval.cs" />
     <Compile Include="Interval\IntervalCandles.cs" />
@@ -120,6 +128,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\ModelBinanceFuturesOrder.cs" />
+    <Compile Include="Model\ModelHistoryOrder.cs" />
+    <Compile Include="Objects\HistoryOrder.cs" />
+    <Compile Include="Objects\OHKC_NEW.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
