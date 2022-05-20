@@ -116,6 +116,7 @@
     <Compile Include="Binance\Client.cs" />
     <Compile Include="Binance\ClientList.cs" />
     <Compile Include="Binance\Socket.cs" />
+    <Compile Include="ConnectDB\ConnectCandle.cs" />
     <Compile Include="ConnectDB\ConnectHistoryOrder.cs" />
     <Compile Include="ConnectDB\ConnectOHLC_NEW.cs" />
     <Compile Include="ConnectDB\ConnectOrder.cs" />
@@ -129,7 +130,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Model\ModelBinanceFuturesOrder.cs" />
+    <Compile Include="Model\ModelCandle.cs" />
     <Compile Include="Model\ModelHistoryOrder.cs" />
+    <Compile Include="Objects\Candle.cs" />
     <Compile Include="Objects\HistoryOrder.cs" />
     <Compile Include="Objects\OHKC_NEW.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

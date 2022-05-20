@@ -241,8 +241,8 @@
                                         <ColumnDefinition Width="10*"/>
                                         <ColumnDefinition Width="10*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Label Grid.Column="0" Content="PNL:" Style="{DynamicResource styleLabel}"/>
-                                    <TextBlock x:Name="PNL" Grid.Column="1" Style="{DynamicResource styleTextBlock}"/>
+                                    <Label Grid.Column="0" Content="Line:" Style="{DynamicResource styleLabel}"/>
+                                    <TextBox x:Name="LINE" Text="2" Grid.Column="1" Style="{DynamicResource styleTextBox}"/>
                                 </Grid>
 
                             </Grid>
