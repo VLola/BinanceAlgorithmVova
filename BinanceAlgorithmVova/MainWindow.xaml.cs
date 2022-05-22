@@ -26,7 +26,8 @@ namespace BinanceAlgorithmVova
     public partial class MainWindow : Window
     {
         public int LINE_OPEN { get; set; } = 5;
-        public int LINE_CLOSE { get; set; } = 10;
+        public int LINE_SL { get; set; } = 10;
+        public int LINE_TP { get; set; } = -20;
         public string API_KEY { get; set; } = "";
         public string SECRET_KEY { get; set; } = "";
         public string CLIENT_NAME { get; set; } = "";
@@ -44,7 +45,9 @@ namespace BinanceAlgorithmVova
         public ScatterPlot sma_long_plot;
         public ScatterPlot bolinger_lower;
         public ScatterPlot bolinger_upper;
-        public ScatterPlot line_scatter;
+        public ScatterPlot line_open_scatter;
+        public ScatterPlot line_sl_scatter;
+        public ScatterPlot line_tp_scatter;
         public ScatterPlot order_long_open_plot;
         public ScatterPlot order_long_close_plot;
         public ScatterPlot order_short_open_plot;
@@ -88,37 +91,77 @@ namespace BinanceAlgorithmVova
             }
         }
 
-        #region - Chart Line Close Order  -
-        private void LINE_CLOSE_TextChanged(object sender, TextChangedEventArgs e)
+        #region - Chart Line Take Profit -
+        private void LINE_TP_TextChanged(object sender, TextChangedEventArgs e)
         {
-            NewLineClose();
-            plt.Refresh();
+            if (LINE_OPEN > 0 && LINE_TP < LINE_OPEN || LINE_OPEN < 0 && LINE_TP > LINE_OPEN)
+            {
+                NewLineTP();
+                plt.Refresh();
+            }
         }
-        double[] line_close_x = new double[2];
-        double[] line_close_y = new double[2];
-        private void NewLineClose()
+        double[] line_tp_x = new double[2];
+        double[] line_tp_y = new double[2];
+        private void NewLineTP()
         {
-            Array.Clear(line_close_x, 0, 2);
-            Array.Clear(line_close_y, 0, 2);
+            Array.Clear(line_tp_x, 0, 2);
+            Array.Clear(line_tp_y, 0, 2);
             if (list_candle_ohlc.Count > 0)
             {
-                if (LINE_OPEN != 0)
+                if (LINE_TP != 0)
                 {
-                    plt.Plot.Remove(line_scatter);
+                    plt.Plot.Remove(line_tp_scatter);
                     double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
-                    double price = line + (line / 1000 * LINE_OPEN);
-                    line_close_x[0] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.AddMinutes(-COUNT_CANDLES).ToOADate();
-                    line_close_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
-                    line_close_y[0] = price;
-                    line_close_y[1] = price;
-                    line_scatter = plt.Plot.AddScatterLines(line_close_x, line_close_y, Color.Red, lineStyle: LineStyle.Dash);
-                    line_scatter.YAxisIndex = 1;
+                    double price = line + (line / 1000 * LINE_TP);
+                    line_tp_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
+                    line_tp_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+                    line_tp_y[0] = price;
+                    line_tp_y[1] = price;
+                    line_tp_scatter = plt.Plot.AddScatterLines(line_tp_x, line_tp_y, Color.Orange, lineStyle: LineStyle.Dash, label: price + " - take profit price");
+                    line_tp_scatter.YAxisIndex = 1;
                 }
             }
         }
-        private void LoadLineClose()
+        private void LoadLineTP()
         {
-            line_close_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+            line_tp_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+        }
+        #endregion
+
+        #region - Chart Line Stop Loss  -
+        private void LINE_SL_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if(LINE_OPEN > 0 && LINE_SL > LINE_OPEN || LINE_OPEN < 0 && LINE_SL < LINE_OPEN)
+            {
+                NewLineSL();
+                plt.Refresh();
+            }
+        }
+        double[] line_sl_x = new double[2];
+        double[] line_sl_y = new double[2];
+        private void NewLineSL()
+        {
+            Array.Clear(line_sl_x, 0, 2);
+            Array.Clear(line_sl_y, 0, 2);
+            if (list_candle_ohlc.Count > 0)
+            {
+                if (LINE_SL != 0)
+                {
+                    plt.Plot.Remove(line_sl_scatter);
+                    double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
+                    double price = line + (line / 1000 * LINE_SL);
+                    line_sl_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
+                    line_sl_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+                    line_sl_y[0] = price;
+                    line_sl_y[1] = price;
+                    line_sl_scatter = plt.Plot.AddScatterLines(line_sl_x, line_sl_y, Color.Red, lineStyle: LineStyle.Dash, label: price + " - stop loss price");
+                    line_sl_scatter.YAxisIndex = 1;
+                }
+            }
+        }
+        private void LoadLineSL()
+        {
+            line_sl_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
         }
         #endregion
 
@@ -138,15 +181,15 @@ namespace BinanceAlgorithmVova
             {
                 if (LINE_OPEN != 0)
                 {
-                    plt.Plot.Remove(line_scatter);
+                    plt.Plot.Remove(line_open_scatter);
                     double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
                     double price = line + (line / 1000 * LINE_OPEN);
-                    line_open_x[0] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.AddMinutes(-COUNT_CANDLES).ToOADate();
+                    line_open_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
                     line_open_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
                     line_open_y[0] = price;
                     line_open_y[1] = price;
-                    line_scatter = plt.Plot.AddScatterLines(line_open_x, line_open_y, Color.LightGreen, lineStyle: LineStyle.Dash);
-                    line_scatter.YAxisIndex = 1;
+                    line_open_scatter = plt.Plot.AddScatterLines(line_open_x, line_open_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: price + " - open order price");
+                    line_open_scatter.YAxisIndex = 1;
                 }
             }
         }
@@ -365,7 +408,8 @@ namespace BinanceAlgorithmVova
                 if (ONLINE_CHART) StartKlineAsync();
                 LoadingCandlesToChart();
                 NewLineOpen();
-                NewLineClose();
+                NewLineSL(); 
+                NewLineTP();
                 LoadingChart();
                 plt.Plot.AxisAuto();
                 plt.Refresh();
@@ -409,8 +453,10 @@ namespace BinanceAlgorithmVova
                     candlePlot.YAxisIndex = 1;
                     // Line open order
                     LoadLineOpen();
-                    // Line close order
-                    LoadLineClose();
+                    // Line stop loss
+                    LoadLineSL();
+                    // Line take profit
+                    LoadLineTP();
                     // Sma
                     sma_long = candlePlot.GetBollingerBands(SMA_LONG);
                     sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
