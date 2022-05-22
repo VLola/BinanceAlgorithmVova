@@ -167,7 +167,8 @@
                                 </DockPanel>
                                 <DockPanel Grid.Column="2" Grid.Row="0" Style="{DynamicResource styleDockPanel}">
                                     <Label Content="Line:" Style="{DynamicResource styleLabel}"/>
-                                    <TextBox Text="{Binding Path=LINE, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_TextChanged" Style="{DynamicResource styleTextBox}"/>
+                                    <TextBox Text="{Binding Path=LINE_CLOSE, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_CLOSE_TextChanged" Style="{DynamicResource styleTextBox}"/>
+                                    <TextBox Text="{Binding Path=LINE_OPEN, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_OPEN_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                 </DockPanel>
                                 <DockPanel Grid.Column="3" Grid.Row="0" Style="{DynamicResource styleDockPanel}">
                                     <Button Content="Long Bet" Click="LongBet_Click" Style="{DynamicResource styleButton}"/>
