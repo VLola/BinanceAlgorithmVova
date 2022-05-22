@@ -118,7 +118,6 @@
     <Compile Include="Binance\Socket.cs" />
     <Compile Include="ConnectDB\ConnectCandle.cs" />
     <Compile Include="ConnectDB\ConnectHistoryOrder.cs" />
-    <Compile Include="ConnectDB\ConnectOHLC_NEW.cs" />
     <Compile Include="ConnectDB\ConnectOrder.cs" />
     <Compile Include="Errors\ErrorText.cs" />
     <Compile Include="Interval\Interval.cs" />
@@ -134,7 +133,6 @@
     <Compile Include="Model\ModelHistoryOrder.cs" />
     <Compile Include="Objects\Candle.cs" />
     <Compile Include="Objects\HistoryOrder.cs" />
-    <Compile Include="Objects\OHKC_NEW.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
