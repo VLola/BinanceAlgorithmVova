@@ -32,6 +32,11 @@
             <Setter Property="Background" Value="Black" />
             <Setter Property="Margin" Value="1" />
         </Style>
+        <Style x:Key="styleRadioButton" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
         <Style x:Key="styleTextBlock" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -176,12 +181,17 @@
                                     <Label Grid.Column="0" Grid.Row="0" Content="Line:" Style="{DynamicResource styleLabel}"/>
                                     <Label Grid.Column="1" Grid.Row="0" Content="SL:" Style="{DynamicResource styleLabel}"/>
                                     <Label Grid.Column="2" Grid.Row="0" Content="TP:" Style="{DynamicResource styleLabel}"/>
-                                    <TextBox Grid.Column="0" Grid.Row="1" Text="{Binding Path=LINE_OPEN, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_OPEN_TextChanged" Style="{DynamicResource styleTextBox}"/>
+                                    <TextBox x:Name="LINE_OPEN_TEXT" Grid.Column="0" Grid.Row="1" Text="{Binding Path=LINE_OPEN, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_OPEN_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                     <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Path=LINE_SL, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_SL_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                     <TextBox Grid.Column="2" Grid.Row="1" Text="{Binding Path=LINE_TP, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_TP_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                 </Grid>
                                 <Grid Grid.Column="3" Grid.Row="0" Style="{DynamicResource styleGridBlack}">
-                                    <Button Content="Long Bet" Click="LongBet_Click" Style="{DynamicResource styleButton}"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <RadioButton Grid.Column="0" Content="Long" Click="Long_Click" Style="{DynamicResource styleRadioButton}"/>
+                                    <RadioButton Grid.Column="1" Content="Short" Click="Short_Click" IsChecked="True" Style="{DynamicResource styleRadioButton}"/>
                                 </Grid>
                                 <Grid Grid.Column="4" Grid.Row="0" Style="{DynamicResource styleGridBlack}">
                                     <Button Content="Exit" Click="Exit_Click" Style="{DynamicResource styleButton}"/>
@@ -206,7 +216,7 @@
                                     <TextBox Grid.Column="1" Text="{Binding SMA_LONG, UpdateSourceTrigger=PropertyChanged}" TextChanged="SMA_LONG_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                 </Grid>
                                 <Grid Grid.Column="3" Grid.Row="1" Style="{DynamicResource styleGridBlack}">
-                                    <Button Content="Short Bet" Click="ShortBet_Click" Style="{DynamicResource styleButton}"/>
+                                    <Button Content="Bet" Click="Bet_Click" Style="{DynamicResource styleButton}"/>
                                 </Grid>
                                 <Grid Grid.Column="4" Grid.Row="1" Style="{DynamicResource styleGridBlack}">
                                     <Button Content="Disconnect" Click="STOP_ASYNC_Click" Style="{DynamicResource styleButton}"/>
@@ -245,7 +255,7 @@
                                     </Grid>
                                 </Grid>
                                 <Grid Grid.Column="3" Grid.Row="2" Style="{DynamicResource styleGridBlack}">
-                                    <Button Content="Close Order" Click="CloseOrder_Click" Style="{DynamicResource styleButton}"/>
+                                    
                                 </Grid>
                                 <Grid Grid.Column="4" Grid.Row="2" Style="{DynamicResource styleGridBlack}">
                                     <Grid.ColumnDefinitions>
@@ -253,7 +263,7 @@
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
                                     <Label Grid.Column="0" Content="PRICE:" Style="{DynamicResource styleLabel}"/>
-                                    <TextBlock Grid.Column="1" Text="Add" Style="{DynamicResource styleTextBlock}"/>
+                                    <TextBlock Grid.Column="1" x:Name="PRICE" Style="{DynamicResource styleTextBlock}"/>
                                 </Grid>
                             </Grid>
                         </Grid>

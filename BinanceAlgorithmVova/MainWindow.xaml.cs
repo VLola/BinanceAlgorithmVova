@@ -20,20 +20,23 @@ using BinanceAlgorithmVova.Interval;
 using BinanceAlgorithmVova.Model;
 using BinanceAlgorithmVova.Objects;
 using Binance.Net.Objects.Models.Futures.Socket;
+using System.Media;
 
 namespace BinanceAlgorithmVova
 {
     public partial class MainWindow : Window
     {
-        public int LINE_OPEN { get; set; } = 5;
-        public int LINE_SL { get; set; } = 10;
-        public int LINE_TP { get; set; } = -20;
+        public bool LONG { get; set; } = false;
+        public bool SHORT { get; set; } = true;
+        public int LINE_OPEN { get; set; } = 1;
+        public double LINE_SL { get; set; } = 0.43;
+        public int LINE_TP { get; set; } = 50;
         public string API_KEY { get; set; } = "";
         public string SECRET_KEY { get; set; } = "";
         public string CLIENT_NAME { get; set; } = "";
         public int COUNT_CANDLES { get; set; } = 100;
         public int SMA_LONG { get; set; } = 20;
-        public decimal USDT_BET { get; set; } = 10;
+        public decimal USDT_BET { get; set; } = 20;
         bool ONLINE_CHART { get; set; } = false;
         bool START_BET { get; set; } = false;
         public double BOLINGER_TP { get; set; } = 100;
@@ -46,8 +49,14 @@ namespace BinanceAlgorithmVova
         public ScatterPlot bolinger_lower;
         public ScatterPlot bolinger_upper;
         public ScatterPlot line_open_scatter;
-        public ScatterPlot line_sl_scatter;
-        public ScatterPlot line_tp_scatter;
+        public ScatterPlot line_open_1_scatter;
+        public ScatterPlot line_open_2_scatter;
+        public ScatterPlot line_open_3_scatter;
+        public ScatterPlot line_sl_1_scatter;
+        public ScatterPlot line_sl_2_scatter;
+        public ScatterPlot line_sl_3_scatter;
+        public ScatterPlot line_tp_1_scatter;
+        public ScatterPlot line_tp_2_scatter;
         public ScatterPlot order_long_open_plot;
         public ScatterPlot order_long_close_plot;
         public ScatterPlot order_short_open_plot;
@@ -91,111 +100,148 @@ namespace BinanceAlgorithmVova
             }
         }
 
+        #region - Event RadioButton -
+        private void Long_Click(object sender, RoutedEventArgs e)
+        {
+            RadioButton radio = e.Source as RadioButton;
+            LONG = (bool)radio.IsChecked;
+            if (LONG) SHORT = false;
+            if (LINE_OPEN > 0) LINE_OPEN = -LINE_OPEN;
+            LINE_OPEN_TEXT.Text = LINE_OPEN.ToString();
+            NewLines();
+        }
+        private void Short_Click(object sender, RoutedEventArgs e)
+        {
+            RadioButton radio = e.Source as RadioButton;
+            SHORT = (bool)radio.IsChecked;
+            if (SHORT) LONG = false;
+            if (LINE_OPEN < 0) LINE_OPEN = -LINE_OPEN;
+            LINE_OPEN_TEXT.Text = LINE_OPEN.ToString();
+            NewLines();
+        }
+        #endregion
+
         #region - Chart Line Take Profit -
         private void LINE_TP_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (LINE_OPEN > 0 && LINE_TP < LINE_OPEN || LINE_OPEN < 0 && LINE_TP > LINE_OPEN)
-            {
-                NewLineTP();
-                plt.Refresh();
-            }
+            NewLineTP();
+            plt.Refresh();
         }
-        double[] line_tp_x = new double[2];
-        double[] line_tp_y = new double[2];
+        double[] line_tp_1_y = new double[2];
+        double[] line_tp_2_y = new double[2];
         private void NewLineTP()
         {
-            Array.Clear(line_tp_x, 0, 2);
-            Array.Clear(line_tp_y, 0, 2);
-            if (list_candle_ohlc.Count > 0)
+            if (LINE_TP != 0 && list_candle_ohlc.Count > 0)
             {
-                if (LINE_TP != 0)
-                {
-                    plt.Plot.Remove(line_tp_scatter);
-                    double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
-                    double price = line + (line / 1000 * LINE_TP);
-                    line_tp_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
-                    line_tp_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
-                    line_tp_y[0] = price;
-                    line_tp_y[1] = price;
-                    line_tp_scatter = plt.Plot.AddScatterLines(line_tp_x, line_tp_y, Color.Orange, lineStyle: LineStyle.Dash, label: price + " - take profit price");
-                    line_tp_scatter.YAxisIndex = 1;
-                }
+                Array.Clear(line_tp_1_y, 0, 2);
+                Array.Clear(line_tp_2_y, 0, 2);
+                plt.Plot.Remove(line_tp_1_scatter);
+                plt.Plot.Remove(line_tp_2_scatter);
+                line_tp_1_y[0] = price + (price_percent * LINE_TP);
+                line_tp_1_y[1] = line_tp_1_y[0];
+                line_tp_2_y[0] = price + (price_percent * -LINE_TP);
+                line_tp_2_y[1] = line_tp_2_y[0];
+                line_tp_1_scatter = plt.Plot.AddScatterLines(line_x, line_tp_1_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_1_y[0] + " - 1 take profit price");
+                line_tp_1_scatter.YAxisIndex = 1;
+                line_tp_2_scatter = plt.Plot.AddScatterLines(line_x, line_tp_2_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_2_y[0] + " - 2 take profit price");
+                line_tp_2_scatter.YAxisIndex = 1;
             }
-        }
-        private void LoadLineTP()
-        {
-            line_tp_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
         }
         #endregion
 
         #region - Chart Line Stop Loss  -
         private void LINE_SL_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if(LINE_OPEN > 0 && LINE_SL > LINE_OPEN || LINE_OPEN < 0 && LINE_SL < LINE_OPEN)
-            {
-                NewLineSL();
-                plt.Refresh();
-            }
+            NewLineSL();
+            plt.Refresh();
         }
-        double[] line_sl_x = new double[2];
-        double[] line_sl_y = new double[2];
+        double[] line_sl_1_y = new double[2];
+        double[] line_sl_2_y = new double[2];
+        double[] line_sl_3_y = new double[2];
         private void NewLineSL()
         {
-            Array.Clear(line_sl_x, 0, 2);
-            Array.Clear(line_sl_y, 0, 2);
-            if (list_candle_ohlc.Count > 0)
+            if (LINE_SL != 0 && list_candle_ohlc.Count > 0)
             {
-                if (LINE_SL != 0)
-                {
-                    plt.Plot.Remove(line_sl_scatter);
-                    double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
-                    double price = line + (line / 1000 * LINE_SL);
-                    line_sl_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
-                    line_sl_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
-                    line_sl_y[0] = price;
-                    line_sl_y[1] = price;
-                    line_sl_scatter = plt.Plot.AddScatterLines(line_sl_x, line_sl_y, Color.Red, lineStyle: LineStyle.Dash, label: price + " - stop loss price");
-                    line_sl_scatter.YAxisIndex = 1;
-                }
+                Array.Clear(line_sl_1_y, 0, 2);
+                Array.Clear(line_sl_2_y, 0, 2);
+                Array.Clear(line_sl_3_y, 0, 2);
+                plt.Plot.Remove(line_sl_1_scatter);
+                plt.Plot.Remove(line_sl_2_scatter);
+                plt.Plot.Remove(line_sl_3_scatter);
+                line_sl_1_y[0] = price + (price_percent * LINE_SL);
+                line_sl_1_y[1] = line_sl_1_y[0];
+                line_sl_2_y[0] = price + (price_percent * 2 * LINE_SL);
+                line_sl_2_y[1] = line_sl_2_y[0];
+                line_sl_3_y[0] = price + (price_percent * 3 * LINE_SL);
+                line_sl_3_y[1] = line_sl_3_y[0];
+                line_sl_1_scatter = plt.Plot.AddScatterLines(line_x, line_sl_1_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - 1 stop loss price");
+                line_sl_1_scatter.YAxisIndex = 1;
+                line_sl_2_scatter = plt.Plot.AddScatterLines(line_x, line_sl_2_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - 2 stop loss price");
+                line_sl_2_scatter.YAxisIndex = 1;
+                line_sl_3_scatter = plt.Plot.AddScatterLines(line_x, line_sl_3_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - 3 stop loss price");
+                line_sl_3_scatter.YAxisIndex = 1;
             }
-        }
-        private void LoadLineSL()
-        {
-            line_sl_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
         }
         #endregion
 
         #region - Chart Line Open Order  -
         private void LINE_OPEN_TextChanged(object sender, TextChangedEventArgs e)
         {
-            NewLineOpen(); 
+            NewLines();
+        }
+        private void NewLines()
+        {
+            NewLineOpen();
+            NewLineSL();
+            NewLineTP();
             plt.Refresh();
         }
-        double[] line_open_x = new double[2];
+        double price;
+        double price_percent;
+        double[] line_x = new double[2];
         double[] line_open_y = new double[2];
+        double[] line_open_1_y = new double[2];
+        double[] line_open_2_y = new double[2];
+        double[] line_open_3_y = new double[2];
         private void NewLineOpen()
         {
-            Array.Clear(line_open_x, 0, 2);
-            Array.Clear(line_open_y, 0, 2);
-            if (list_candle_ohlc.Count > 0)
+            if (LINE_OPEN != 0 && list_candle_ohlc.Count > 0)
             {
-                if (LINE_OPEN != 0)
-                {
-                    plt.Plot.Remove(line_open_scatter);
-                    double line = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
-                    double price = line + (line / 1000 * LINE_OPEN);
-                    line_open_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
-                    line_open_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
-                    line_open_y[0] = price;
-                    line_open_y[1] = price;
-                    line_open_scatter = plt.Plot.AddScatterLines(line_open_x, line_open_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: price + " - open order price");
-                    line_open_scatter.YAxisIndex = 1;
-                }
+
+                Array.Clear(line_x, 0, 2);
+                Array.Clear(line_open_y, 0, 2);
+                Array.Clear(line_open_1_y, 0, 2);
+                Array.Clear(line_open_2_y, 0, 2);
+                Array.Clear(line_open_3_y, 0, 2);
+                plt.Plot.Remove(line_open_scatter);
+                plt.Plot.Remove(line_open_1_scatter);
+                plt.Plot.Remove(line_open_2_scatter);
+                plt.Plot.Remove(line_open_3_scatter);
+                price = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
+                price_percent = price / 1000 * LINE_OPEN;
+                line_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
+                line_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+                line_open_y[0] = price;
+                line_open_y[1] = price;
+                line_open_1_y[0] = price + price_percent;
+                line_open_1_y[1] = line_open_1_y[0];
+                line_open_2_y[0] = price + price_percent + price_percent;
+                line_open_2_y[1] = line_open_2_y[0];
+                line_open_3_y[0] = price + price_percent + price_percent + price_percent;
+                line_open_3_y[1] = line_open_3_y[0];
+                line_open_scatter = plt.Plot.AddScatterLines(line_x, line_open_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: price + " - open order price");
+                line_open_scatter.YAxisIndex = 1;
+                line_open_1_scatter = plt.Plot.AddScatterLines(line_x, line_open_1_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_1_y[0] + " - 1 open order price");
+                line_open_1_scatter.YAxisIndex = 1;
+                line_open_2_scatter = plt.Plot.AddScatterLines(line_x, line_open_2_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_2_y[0] + " - 2 open order price");
+                line_open_2_scatter.YAxisIndex = 1;
+                line_open_3_scatter = plt.Plot.AddScatterLines(line_x, line_open_3_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_3_y[0] + " - 3 open order price");
+                line_open_3_scatter.YAxisIndex = 1;
             }
         }
         private void LoadLineOpen()
         {
-            line_open_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+            line_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
         }
         #endregion
 
@@ -209,41 +255,6 @@ namespace BinanceAlgorithmVova
         {
             CheckBox box = e.Source as CheckBox;
             START_BET = (bool)box.IsChecked;
-        }
-        #endregion
-
-        #region - Open order, close order -
-
-        public decimal quantity_bet;
-        public long bet_order_id = 0;
-        private void LongBet_Click(object sender, RoutedEventArgs e)
-        {
-            string symbol = LIST_SYMBOLS.Text;
-            if (bet_order_id == 0)
-            {
-                if (USDT_BET > 0m && PRICE_SYMBOL > 0m)
-                {
-                    quantity_bet = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
-                    bet_order_id = Algorithm.Algorithm.OpenOrder(socket, symbol, quantity_bet, PositionSide.Long);
-                }
-            }
-        }
-        private void ShortBet_Click(object sender, RoutedEventArgs e)
-        {
-            string symbol = LIST_SYMBOLS.Text;
-            if (bet_order_id == 0)
-            {
-                if (USDT_BET > 0m && PRICE_SYMBOL > 0m)
-                {
-                    quantity_bet = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
-                    bet_order_id = Algorithm.Algorithm.OpenOrder(socket, symbol, quantity_bet, PositionSide.Short);
-                }
-            }
-        }
-        private void CloseOrder_Click(object sender, RoutedEventArgs e)
-        {
-            string symbol = LIST_SYMBOLS.Text;
-            if (bet_order_id != 0) bet_order_id = Algorithm.Algorithm.CloseOrder(socket, symbol, bet_order_id, quantity_bet);
         }
         #endregion
 
@@ -311,7 +322,7 @@ namespace BinanceAlgorithmVova
             if (symbol != "")
             {
                 ConnectOrder.DeleteAll();
-                foreach (var it in Algorithm.AlgorithmBet.InfoOrder(socket, symbol, start_time))
+                foreach (var it in Algorithm.Algorithm.InfoOrder(socket, symbol, start_time))
                 {
 
                     if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
@@ -390,6 +401,8 @@ namespace BinanceAlgorithmVova
                         list_candle_ohlc.Add(new OHLC(it.Open, it.High, it.Low, it.Close, it.DateTime, it.TimeSpan));
                     }
                     InfoOrderAsunc(list_candle_ohlc[0].DateTime);
+                    PRICE_SYMBOL = Decimal.Parse(list_candle_ohlc[list_candle_ohlc.Count - 1].Close.ToString());
+                    PRICE.Text = PRICE_SYMBOL.ToString();
                 }
             }
             catch (Exception c)
@@ -407,9 +420,7 @@ namespace BinanceAlgorithmVova
                 LoadingCandlesToDB();
                 if (ONLINE_CHART) StartKlineAsync();
                 LoadingCandlesToChart();
-                NewLineOpen();
-                NewLineSL(); 
-                NewLineTP();
+                NewLines();
                 LoadingChart();
                 plt.Plot.AxisAuto();
                 plt.Refresh();
@@ -453,10 +464,10 @@ namespace BinanceAlgorithmVova
                     candlePlot.YAxisIndex = 1;
                     // Line open order
                     LoadLineOpen();
-                    // Line stop loss
-                    LoadLineSL();
-                    // Line take profit
-                    LoadLineTP();
+                    //// Line stop loss
+                    //LoadLineSL();
+                    //// Line take profit
+                    //LoadLineTP();
                     // Sma
                     sma_long = candlePlot.GetBollingerBands(SMA_LONG);
                     sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
@@ -531,7 +542,7 @@ namespace BinanceAlgorithmVova
                         order_short_open_plot.YAxisIndex = 1;
                     }
 
-                    //StartAlgorithm();
+                    StartAlgorithm();
 
                 }
             }
@@ -540,179 +551,41 @@ namespace BinanceAlgorithmVova
         #endregion
 
         #region - Algorithm -
-        public long order_id = 0;
-        decimal quantity;
+
+        #region - Open order, close order -
+
+        public decimal open_quantity;
+        public long open_order_id = 0;
+        private void Bet_Click(object sender, RoutedEventArgs e)
+        {
+            string symbol = LIST_SYMBOLS.Text;
+            if (START_BET && USDT_BET > 0m && PRICE_SYMBOL > 0 && LINE_OPEN < 0 && open_order_id == 0 && LONG)
+            {
+                NewLines();
+                open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
+                open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                if (open_order_id != 0) start = true;
+            }
+            else if (START_BET && USDT_BET > 0m && PRICE_SYMBOL > 0m && LINE_OPEN > 0 && open_order_id == 0 && SHORT)
+            {
+                NewLines();
+                open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
+                open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                if (open_order_id != 0) start = true;
+            }
+        }
+        #endregion
+
+        public decimal quantity_1 = 0m;
+        public long order_id_1 = 0;
         public bool start = false;
-        public bool position;
-        public bool temp_position;
-        public bool start_programm = true;
-
-        #region - Check change position (Long, Short) -
-        private void Position()
-        {
-            try
-            {
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < sma_long.ys[sma_long.ys.Length - 1]) position = false;
-                else position = true;
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"Position {c.Message}");
-            }
-        }
-        private void TempPosition()
-        {
-            try
-            {
-                if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < sma_long.ys[sma_long.ys.Length - 1]) temp_position = false;
-                else temp_position = true;
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"TempPosition {c.Message}");
-            }
-        }
-
-        #endregion
-
-        #region - Check SL TP -
-        private bool PriceBolingerLongTP()
-        {
-            try
-            {
-                if (BOLINGER_TP > 0)
-                {
-                    double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
-                    double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                    double price = (price_bolinger - price_sma) / 100 * BOLINGER_TP + price_sma;
-                    if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
-                    else return false;
-                }
-                else return false;
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"PriceBolingerLongTP {c.Message}");
-                return false;
-            }
-        }
-        private bool PriceBolingerLongSL()
-        {
-            try
-            {
-                if (BOLINGER_SL > 0)
-                {
-                    double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
-                    double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                    double price = price_sma - (price_sma - price_bolinger) / 100 * BOLINGER_SL;
-                    if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
-                    else return false;
-                }
-                else return false;
-
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"PriceBolingerLongSL {c.Message}");
-                return false;
-            }
-        }
-        private bool PriceBolingerShortTP()
-        {
-            try
-            {
-                if (BOLINGER_TP > 0)
-                {
-                    double price_bolinger = sma_long.lower[sma_long.lower.Length - 1];
-                    double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                    double price = price_sma - (price_sma - price_bolinger) / 100 * BOLINGER_TP;
-                    if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close < price) return true;
-                    else return false;
-                }
-                else return false;
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"PriceBolingerShortTP {c.Message}");
-                return false;
-            }
-        }
-        private bool PriceBolingerShortSL()
-        {
-            try
-            {
-                if (BOLINGER_SL > 0)
-                {
-                    double price_bolinger = sma_long.upper[sma_long.upper.Length - 1];
-                    double price_sma = sma_long.ys[sma_long.ys.Length - 1];
-                    double price = (price_bolinger - price_sma) / 100 * BOLINGER_SL + price_sma;
-                    if (list_candle_ohlc[list_candle_ohlc.Count - 1].Close > price) return true;
-                    else return false;
-                }
-                else return false;
-            }
-            catch (Exception c)
-            {
-                ErrorText.Add($"PriceBolingerShortSL {c.Message}");
-                return false;
-            }
-        }
-        #endregion
-
-
         private void StartAlgorithm()
         {
             try
             {
-                if (START_BET && ONLINE_CHART && order_id == 0)
-                {
-                    Position();
-
-                    if (start_programm)
-                    {
-                        TempPosition();
-                        start_programm = false;
-                    }
-
-                    if (position == true && temp_position == false) start = true;
-                    else if (position == false && temp_position == true) start = true;
-
-                    TempPosition();
-                }
                 string symbol = LIST_SYMBOLS.Text;
-
-
-                if (START_BET && ONLINE_CHART && order_id != 0)
+                if (ONLINE_CHART && START_BET && start)
                 {
-                    bool sl = false;
-                    bool tp = false;
-                    PositionSide position_side = Algorithm.AlgorithmBet.InfoOrderPositionSide(socket, symbol, order_id);
-                    if (position_side == PositionSide.Long)
-                    {
-                        tp = PriceBolingerLongTP();
-                        sl = PriceBolingerLongSL();
-                    }
-                    else if (position_side == PositionSide.Short)
-                    {
-                        tp = PriceBolingerShortTP();
-                        sl = PriceBolingerShortSL();
-                    }
-                    if (tp || sl)
-                    {
-                        order_id = Algorithm.AlgorithmBet.CloseOrder(socket, symbol, order_id, quantity);
-                        if (order_id == 0) start_programm = true;
-                    }
-                }
-                if (START_BET && ONLINE_CHART && start && order_id == 0)
-                {
-                    if (USDT_BET > 0m && PRICE_SYMBOL > 0m)
-                    {
-                        quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
-
-                        order_id = Algorithm.AlgorithmBet.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys[sma_long.ys.Length - 1]);
-                        
-                        start = false;
-                    }
 
                 }
             }
@@ -722,75 +595,6 @@ namespace BinanceAlgorithmVova
             }
         }
 
-        //private void StartAlgorithm()
-        //{
-        //    try
-        //    {
-        //        if (START_BET.IsChecked == true && ONLINE_CHART.IsChecked == true && order_id == 0)
-        //        {
-        //            Position();
-
-        //            if (start_programm)
-        //            {
-        //                TempPosition();
-        //                start_programm = false;
-        //            }
-
-        //            if (position == true && temp_position == false) start = true;
-        //            else if (position == false && temp_position == true) start = true;
-
-        //            TempPosition();
-        //        }
-        //        string symbol = LIST_SYMBOLS.Text;
-
-
-        //        if (START_BET.IsChecked == true && ONLINE_CHART.IsChecked == true && order_id != 0)
-        //        {
-        //            bool sl = false;
-        //            bool tp = false;
-        //            PositionSide position_side = Algorithm.AlgorithmBet.InfoOrderPositionSide(socket, symbol, order_id);
-        //            if (position_side == PositionSide.Long)
-        //            {
-        //                tp = PriceBolingerLongTP();
-        //                sl = PriceBolingerLongSL();
-        //            }
-        //            else if (position_side == PositionSide.Short)
-        //            {
-        //                tp = PriceBolingerShortTP();
-        //                sl = PriceBolingerShortSL();
-        //            }
-        //            if (tp || sl)
-        //            {
-        //                order_id = Algorithm.AlgorithmBet.CloseOrder(socket, symbol, order_id, quantity);
-        //                if (order_id == 0) start_programm = true;
-        //            }
-        //        }
-        //        if (START_BET.IsChecked == true && ONLINE_CHART.IsChecked == true && start && order_id == 0)
-        //        {
-        //            string usdt_bet = USDT_BET.Text;
-        //            string price_symbol = PRICE_SYMBOL.Text;
-        //            if (usdt_bet != "" && price_symbol != "")
-        //            {
-        //                decimal usdt = Decimal.Parse(usdt_bet);
-        //                decimal price = Decimal.Parse(price_symbol);
-        //                if (usdt > 0m && price > 0m)
-        //                {
-        //                    quantity = Math.Round(usdt / price, 1);
-
-        //                    order_id = Algorithm.AlgorithmBet.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys[sma_long.ys.Length - 1]);
-        //                    //order_id = Algorithm.AlgorithmOne.OpenOrder(socket, symbol, quantity, list_candle_ohlc[list_candle_ohlc.Count - 1].Close, sma_long.ys);
-
-        //                    if (order_id != 0) start = false;
-        //                }
-        //            }
-
-        //        }
-        //    }
-        //    catch (Exception c)
-        //    {
-        //        ErrorText.Add($"StartAlgorithm {c.Message}");
-        //    }
-        //}
         #endregion
 
         #region - Load Candles -
@@ -886,7 +690,7 @@ namespace BinanceAlgorithmVova
         public Candle candle = new Candle();
         public void StartKlineAsync()
         {
-            StartPriceAsync();
+            //StartPriceAsync();
             socket.socketClient.UsdFuturesStreams.SubscribeToKlineUpdatesAsync(LIST_SYMBOLS.Text, interval_time, Message =>
             {
                 Dispatcher.Invoke(new Action(() =>
@@ -898,6 +702,8 @@ namespace BinanceAlgorithmVova
                     candle.Close = Decimal.ToDouble(Message.Data.Data.ClosePrice);
                     candle.TimeSpan = timeSpan;
                     if (!ConnectCandle.Update(candle)) ConnectCandle.Insert(candle);
+                    PRICE_SYMBOL = Message.Data.Data.ClosePrice;
+                    PRICE.Text = PRICE_SYMBOL.ToString();
                     LoadingCandlesToChart();
                     LoadingChart();
                     plt.Refresh();
@@ -906,16 +712,16 @@ namespace BinanceAlgorithmVova
 
         }
 
-        private void StartPriceAsync()
-        {
-            socket.socketClient.UsdFuturesStreams.SubscribeToMarkPriceUpdatesAsync(symbol: LIST_SYMBOLS.Text, updateInterval: 1000, Message =>
-            {
-                Dispatcher.Invoke(new Action(() =>
-                {
-                    PRICE_SYMBOL = Message.Data.MarkPrice;
-                }));
-            });
-        }
+        //private void StartPriceAsync()
+        //{
+        //    socket.socketClient.UsdFuturesStreams.SubscribeToMarkPriceUpdatesAsync(symbol: LIST_SYMBOLS.Text, updateInterval: 1000, Message =>
+        //    {
+        //        Dispatcher.Invoke(new Action(() =>
+        //        {
+        //            PRICE_SYMBOL = Message.Data.MarkPrice;
+        //        }));
+        //    });
+        //}
         #endregion
 
         #region - Candles Save -

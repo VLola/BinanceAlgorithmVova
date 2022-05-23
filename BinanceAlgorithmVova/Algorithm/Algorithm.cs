@@ -66,5 +66,15 @@ namespace BinanceAlgorithmVova.Algorithm
             }
             return result.Data.ToList();
         }
+        public static double InfoOrderLast(Socket socket, string symbol)
+        {
+            var result = socket.futures.Trading.GetOrdersAsync(symbol: symbol).Result;
+            if (!result.Success)
+            {
+                ErrorText.Add($"InfoOrder: {result.Error.Message}");
+                return InfoOrderLast(socket, symbol);
+            }
+            return Decimal.ToDouble(result.Data.ToList()[0].AvgPrice);
+        }
     }
 }
