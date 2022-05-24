@@ -291,8 +291,7 @@
                                     <GridViewColumn DisplayMemberBinding="{Binding symbol}" Width="100" Header="symbol"/>
                                     <GridViewColumn DisplayMemberBinding="{Binding open_price}" Width="100" Header="open price"/>
                                     <GridViewColumn DisplayMemberBinding="{Binding close_price}" Width="100" Header="close price"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding qty_open}" Width="100" Header="qty open"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding qty_close}" Width="100" Header="qty close"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding qyantity}" Width="100" Header="qyantity"/>
                                     <GridViewColumn Width="100" Header="side">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>

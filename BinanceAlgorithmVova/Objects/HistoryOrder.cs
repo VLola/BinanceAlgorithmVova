@@ -10,8 +10,7 @@ namespace BinanceAlgorithmVova.Objects
         public string symbol { get; set; }
         public double open_price { get; set; }
         public double close_price { get; set; }
-        public double qty_open { get; set; }
-        public double qty_close { get; set; }
+        public double qyantity { get; set; }
         public PositionSide side { get; set; }
         public string side_color { get; set; }
         public double? profit { get; set; }
@@ -22,15 +21,16 @@ namespace BinanceAlgorithmVova.Objects
         public double total { get; set; }
         public string total_color { get; set; }
         public HistoryOrder() { }
-        public HistoryOrder(DateTime date, string symbol, double open_price, double close_price, double qty_open, double qty_close, PositionSide side)
+        public HistoryOrder(DateTime date, string symbol, double open_price, double close_price, double qyantity, PositionSide side)
         {
             this.date = date;
             this.symbol = symbol;
             this.open_price = open_price;
             this.close_price = close_price;
-            this.qty_open = qty_open;
-            this.qty_close = qty_close;
-            this.side = side;
+            this.qyantity = qyantity;
+            this.side = side; 
+            double qty_open = qyantity * open_price;
+            double qty_close = qyantity * close_price;
             commission = Math.Round((qty_open / 50 / 2 * 0.04) + (qty_close / 50 / 2 * 0.04), 9);
             if (side == PositionSide.Long)
             {

@@ -67,6 +67,7 @@ namespace BinanceAlgorithmVova
         public KlineInterval interval_time = KlineInterval.OneMinute;
         public TimeSpan timeSpan = new TimeSpan(TimeSpan.TicksPerMinute);
         public List<HistoryOrder> history_order = new List<HistoryOrder>();
+        public const int port = 1433;
         public MainWindow()
         {
             InitializeComponent();
@@ -97,7 +98,7 @@ namespace BinanceAlgorithmVova
                 context.Candles.Create();
             }
         }
-
+       
         #region - Sound Order-
         private void SoundOpenOrder()
         {
@@ -304,11 +305,11 @@ namespace BinanceAlgorithmVova
             {
                 if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
                 {
-                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(orders[i - 1].QuoteQuantityFilled), Convert.ToDouble(it.QuoteQuantityFilled), it.PositionSide));
+                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
                 }
                 else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
                 {
-                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(orders[i - 1].QuoteQuantityFilled), Convert.ToDouble(it.QuoteQuantityFilled), it.PositionSide));
+                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
                 }
                 i++;
             }
@@ -334,39 +335,44 @@ namespace BinanceAlgorithmVova
             short_open_order_y.Clear();
             short_close_order_x.Clear();
             short_close_order_y.Clear();
-            bool check_one = false;
             string symbol = LIST_SYMBOLS.Text;
             if (symbol != "")
             {
                 ConnectOrder.DeleteAll();
-                foreach (var it in Algorithm.Algorithm.InfoOrder(socket, symbol, start_time))
+                List<BinanceFuturesOrder> list = Algorithm.Algorithm.InfoOrder(socket, symbol, start_time);
+                foreach(var it in list)
                 {
-
-                    if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
+                    if(it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
                     {
                         long_open_order_x.Add(it.CreateTime.ToOADate());
                         long_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        check_one = true;
-                        ConnectOrder.Insert(it);
+                        foreach (var iterator in list)
+                        {
+                            if(iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Long && iterator.Side == OrderSide.Sell && iterator.Quantity == it.Quantity)
+                            {
+                                ConnectOrder.Insert(it);
+                                long_close_order_x.Add(iterator.CreateTime.ToOADate());
+                                long_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
+                                ConnectOrder.Insert(iterator);
+                                break;
+                            }
+                        }
                     }
-                    else if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell && check_one)
-                    {
-                        long_close_order_x.Add(it.CreateTime.ToOADate());
-                        long_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        ConnectOrder.Insert(it);
-                    }
-                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
+                    if(it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
                     {
                         short_open_order_x.Add(it.CreateTime.ToOADate());
                         short_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        check_one = true;
-                        ConnectOrder.Insert(it);
-                    }
-                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy && check_one)
-                    {
-                        short_close_order_x.Add(it.CreateTime.ToOADate());
-                        short_close_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        ConnectOrder.Insert(it);
+                        foreach (var iterator in list)
+                        {
+                            if (iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Short && iterator.Side == OrderSide.Buy && iterator.Quantity == it.Quantity)
+                            {
+                                ConnectOrder.Insert(it);
+                                short_close_order_x.Add(iterator.CreateTime.ToOADate());
+                                short_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
+                                ConnectOrder.Insert(iterator);
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -766,8 +772,9 @@ namespace BinanceAlgorithmVova
                     // Take profit
                     if(SHORT && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_tp_1_y[0])
                     {
-                        decimal quantity_sum = quantity_1 + quantity_2 + quantity_3;
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_sum, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Long);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
                         open_quantity = 0m;
                         open_order_id = 0;
@@ -799,7 +806,9 @@ namespace BinanceAlgorithmVova
                     if (LONG && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_tp_1_y[0])
                     {
                         decimal quantity_sum = quantity_1 + quantity_2 + quantity_3;
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_sum, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Short);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
                         open_quantity = 0m;
                         open_order_id = 0;

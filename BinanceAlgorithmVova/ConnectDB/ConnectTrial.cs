@@ -12,12 +12,12 @@ namespace BinanceAlgorithmVova.ConnectDB
         
         public static bool Check(string trial_key)
         {
-            using (IDbConnection connection = new SqlConnection(connectionString))
-            {
-                List<string> list = connection.Query<string>($"SELECT * FROM Trials").ToList();
-                foreach (string it in list) if (it == trial_key) return true;
-            }
-            return false;
+            //using (IDbConnection connection = new SqlConnection(connectionString))
+            //{
+            //    List<string> list = connection.Query<string>($"SELECT * FROM Trials").ToList();
+            //    foreach (string it in list) if (it == trial_key) return true;
+            //return false;
+            return true;
         }
     }
 }
