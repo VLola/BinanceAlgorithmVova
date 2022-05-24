@@ -118,6 +118,7 @@
     <Compile Include="ConnectDB\ConnectCandle.cs" />
     <Compile Include="ConnectDB\ConnectHistoryOrder.cs" />
     <Compile Include="ConnectDB\ConnectOrder.cs" />
+    <Compile Include="ConnectDB\ConnectTrial.cs" />
     <Compile Include="Errors\ErrorText.cs" />
     <Compile Include="Interval\Interval.cs" />
     <Compile Include="Interval\IntervalCandles.cs" />
