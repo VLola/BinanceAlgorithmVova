@@ -172,18 +172,15 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
                                         <ColumnDefinition/>
-                                        <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
                                         <RowDefinition/>
                                         <RowDefinition/>
                                     </Grid.RowDefinitions>
                                     <Label Grid.Column="0" Grid.Row="0" Content="Line:" Style="{DynamicResource styleLabel}"/>
-                                    <Label Grid.Column="1" Grid.Row="0" Content="SL:" Style="{DynamicResource styleLabel}"/>
-                                    <Label Grid.Column="2" Grid.Row="0" Content="TP:" Style="{DynamicResource styleLabel}"/>
+                                    <Label Grid.Column="1" Grid.Row="0" Content="TP:" Style="{DynamicResource styleLabel}"/>
                                     <TextBox x:Name="LINE_OPEN_TEXT" Grid.Column="0" Grid.Row="1" Text="{Binding Path=LINE_OPEN, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_OPEN_TextChanged" Style="{DynamicResource styleTextBox}"/>
-                                    <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Path=LINE_SL, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_SL_TextChanged" Style="{DynamicResource styleTextBox}"/>
-                                    <TextBox Grid.Column="2" Grid.Row="1" Text="{Binding Path=LINE_TP, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_TP_TextChanged" Style="{DynamicResource styleTextBox}"/>
+                                    <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Path=LINE_TP, UpdateSourceTrigger=PropertyChanged}" TextChanged="LINE_TP_TextChanged" Style="{DynamicResource styleTextBox}"/>
                                 </Grid>
                                 <Grid Grid.Column="3" Grid.Row="0" Style="{DynamicResource styleGridBlack}">
                                     <Grid.ColumnDefinitions>
@@ -222,7 +219,12 @@
                                     <Button Content="Disconnect" Click="STOP_ASYNC_Click" Style="{DynamicResource styleButton}"/>
                                 </Grid>
                                 <Grid Grid.Column="0" Grid.Row="2" Style="{DynamicResource styleGridBlack}">
-                                    <CheckBox Content="Start bet" Click="START_BET_Click" Style="{DynamicResource styleCheckBox}"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" Content="Start bet" Click="START_BET_Click" Style="{DynamicResource styleCheckBox}"/>
+                                    <CheckBox Grid.Column="1" Content="Sound" Click="SOUND_Click" Style="{DynamicResource styleCheckBox}"/>
                                 </Grid>
                                 <Grid Grid.Column="1" Grid.Row="2" Style="{DynamicResource styleGridBlack}">
                                     <Grid.ColumnDefinitions>

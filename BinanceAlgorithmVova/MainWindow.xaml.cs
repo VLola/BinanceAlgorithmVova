@@ -25,6 +25,7 @@ namespace BinanceAlgorithmVova
 {
     public partial class MainWindow : Window
     {
+        public bool SOUND { get; set; } = false;
         public bool LONG { get; set; } = false;
         public bool SHORT { get; set; } = true;
         public int LINE_OPEN { get; set; } = 1;
@@ -36,8 +37,8 @@ namespace BinanceAlgorithmVova
         public int COUNT_CANDLES { get; set; } = 100;
         public int SMA_LONG { get; set; } = 20;
         public decimal USDT_BET { get; set; } = 20m;
-        bool ONLINE_CHART { get; set; } = false;
-        bool START_BET { get; set; } = false;
+        public bool ONLINE_CHART { get; set; } = false;
+        public bool START_BET { get; set; } = false;
         public double BOLINGER_TP { get; set; } = 100;
         public double BOLINGER_SL { get; set; } = 100;
         public decimal PRICE_SYMBOL { get; set; }
@@ -52,8 +53,6 @@ namespace BinanceAlgorithmVova
         public ScatterPlot line_open_2_scatter;
         public ScatterPlot line_open_3_scatter;
         public ScatterPlot line_sl_1_scatter;
-        public ScatterPlot line_sl_2_scatter;
-        public ScatterPlot line_sl_3_scatter;
         public ScatterPlot line_tp_1_scatter;
         public ScatterPlot line_tp_2_scatter;
         public ScatterPlot order_long_open_plot;
@@ -67,7 +66,6 @@ namespace BinanceAlgorithmVova
         public KlineInterval interval_time = KlineInterval.OneMinute;
         public TimeSpan timeSpan = new TimeSpan(TimeSpan.TicksPerMinute);
         public List<HistoryOrder> history_order = new List<HistoryOrder>();
-        public const int port = 1433;
         public MainWindow()
         {
             InitializeComponent();
@@ -98,15 +96,34 @@ namespace BinanceAlgorithmVova
                 context.Candles.Create();
             }
         }
-       
+
         #region - Sound Order-
+        private void SOUND_Click(object sender, RoutedEventArgs e)
+        {
+            CheckBox box = e.Source as CheckBox;
+            SOUND = (bool)box.IsChecked;
+        }
         private void SoundOpenOrder()
         {
-            new SoundPlayer(Properties.Resources.wav_2).Play();
+            try
+            {
+                if (SOUND) new SoundPlayer(Properties.Resources.wav_2).Play();
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"SoundOpenOrder {c.Message}");
+            }
         }
         private void SoundCloseOrder()
         {
-            new SoundPlayer(Properties.Resources.wav_1).Play();
+            try
+            {
+                if (SOUND) new SoundPlayer(Properties.Resources.wav_1).Play();
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"LoadingCandlesToChart {c.Message}");
+            }
         }
         #endregion
 
@@ -118,7 +135,7 @@ namespace BinanceAlgorithmVova
             if (LONG) SHORT = false;
             if (LINE_OPEN > 0) LINE_OPEN = -LINE_OPEN;
             LINE_OPEN_TEXT.Text = LINE_OPEN.ToString();
-            NewLines();
+            NewLines(0);
         }
         private void Short_Click(object sender, RoutedEventArgs e)
         {
@@ -127,7 +144,7 @@ namespace BinanceAlgorithmVova
             if (SHORT) LONG = false;
             if (LINE_OPEN < 0) LINE_OPEN = -LINE_OPEN;
             LINE_OPEN_TEXT.Text = LINE_OPEN.ToString();
-            NewLines();
+            NewLines(0);
         }
         #endregion
 
@@ -141,76 +158,100 @@ namespace BinanceAlgorithmVova
         double[] line_tp_2_y = new double[2];
         private void NewLineTP()
         {
-            if (list_candle_ohlc.Count > 0)
+            try
             {
-                Array.Clear(line_tp_1_y, 0, 2);
-                Array.Clear(line_tp_2_y, 0, 2);
-                plt.Plot.Remove(line_tp_1_scatter);
-                plt.Plot.Remove(line_tp_2_scatter);
-                if(LINE_TP == 0)
+                if (list_candle_ohlc.Count > 0)
                 {
-                    line_tp_1_y[0] = price;
-                    line_tp_2_y[0] = price;
+                    Array.Clear(line_tp_1_y, 0, 2);
+                    Array.Clear(line_tp_2_y, 0, 2);
+                    plt.Plot.Remove(line_tp_1_scatter);
+                    plt.Plot.Remove(line_tp_2_scatter);
+                    if (LINE_TP == 0)
+                    {
+                        line_tp_1_y[0] = price;
+                        line_tp_2_y[0] = price;
+                    }
+                    else
+                    {
+                        line_tp_1_y[0] = price + (price_percent * LINE_TP);
+                        line_tp_2_y[0] = price + (price_percent * -LINE_TP);
+                    }
+                    line_tp_1_y[1] = line_tp_1_y[0];
+                    line_tp_2_y[1] = line_tp_2_y[0];
+                    line_tp_1_scatter = plt.Plot.AddScatterLines(line_x, line_tp_1_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_1_y[0] + " - 1 take profit price");
+                    line_tp_1_scatter.YAxisIndex = 1;
+                    line_tp_2_scatter = plt.Plot.AddScatterLines(line_x, line_tp_2_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_2_y[0] + " - 2 take profit price");
+                    line_tp_2_scatter.YAxisIndex = 1;
                 }
-                else
-                {
-                    line_tp_1_y[0] = price + (price_percent * LINE_TP);
-                    line_tp_2_y[0] = price + (price_percent * -LINE_TP);
-                }
-                line_tp_1_y[1] = line_tp_1_y[0];
-                line_tp_2_y[1] = line_tp_2_y[0];
-                line_tp_1_scatter = plt.Plot.AddScatterLines(line_x, line_tp_1_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_1_y[0] + " - 1 take profit price");
-                line_tp_1_scatter.YAxisIndex = 1;
-                line_tp_2_scatter = plt.Plot.AddScatterLines(line_x, line_tp_2_y, Color.Orange, lineStyle: LineStyle.Dash, label: line_tp_2_y[0] + " - 2 take profit price");
-                line_tp_2_scatter.YAxisIndex = 1;
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"NewLineTP {c.Message}");
             }
         }
         #endregion
 
         #region - Chart Line Stop Loss  -
-        private void LINE_SL_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            NewLineSL();
-            plt.Refresh();
-        }
         double[] line_sl_1_y = new double[2];
-        double[] line_sl_2_y = new double[2];
-        double[] line_sl_3_y = new double[2];
-        private void NewLineSL()
+        private void NewLineSL(double price_sl)
         {
             if (LINE_SL != 0 && list_candle_ohlc.Count > 0)
             {
-                Array.Clear(line_sl_1_y, 0, 2);
-                Array.Clear(line_sl_2_y, 0, 2);
-                Array.Clear(line_sl_3_y, 0, 2);
-                plt.Plot.Remove(line_sl_1_scatter);
-                plt.Plot.Remove(line_sl_2_scatter);
-                plt.Plot.Remove(line_sl_3_scatter);
-                line_sl_1_y[0] = price + (price_percent * LINE_SL);
-                line_sl_1_y[1] = line_sl_1_y[0];
-                line_sl_2_y[0] = price + (price_percent * 2 * LINE_SL);
-                line_sl_2_y[1] = line_sl_2_y[0];
-                line_sl_3_y[0] = price + (price_percent * 3 * LINE_SL);
-                line_sl_3_y[1] = line_sl_3_y[0];
-                line_sl_1_scatter = plt.Plot.AddScatterLines(line_x, line_sl_1_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - 1 stop loss price");
-                line_sl_1_scatter.YAxisIndex = 1;
-                line_sl_2_scatter = plt.Plot.AddScatterLines(line_x, line_sl_2_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_2_y[0] + " - 2 stop loss price");
-                line_sl_2_scatter.YAxisIndex = 1;
-                line_sl_3_scatter = plt.Plot.AddScatterLines(line_x, line_sl_3_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_3_y[0] + " - 3 stop loss price");
-                line_sl_3_scatter.YAxisIndex = 1;
+                try
+                {
+                    Array.Clear(line_sl_1_y, 0, 2);
+                    plt.Plot.Remove(line_sl_1_scatter);
+                    line_sl_1_y[0] = price_sl;
+                    line_sl_1_y[1] = line_sl_1_y[0];
+                    line_sl_1_scatter = plt.Plot.AddScatterLines(line_x, line_sl_1_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - stop loss price");
+                    line_sl_1_scatter.YAxisIndex = 1;
+                    plt.Refresh();
+                }
+                catch (Exception c)
+                {
+                    ErrorText.Add($"NewLineSL {c.Message}");
+                }
             }
         }
+        private void NewLineSLClear()
+        {
+            plt.Plot.Remove(line_sl_1_scatter);
+            plt.Refresh();
+        }
+        //private void NewLineSL()
+        //{
+        //    if (LINE_SL != 0 && list_candle_ohlc.Count > 0)
+        //    {
+        //        Array.Clear(line_sl_1_y, 0, 2);
+        //        Array.Clear(line_sl_2_y, 0, 2);
+        //        Array.Clear(line_sl_3_y, 0, 2);
+        //        plt.Plot.Remove(line_sl_1_scatter);
+        //        plt.Plot.Remove(line_sl_2_scatter);
+        //        plt.Plot.Remove(line_sl_3_scatter);
+        //        line_sl_1_y[0] = price + (price_percent * LINE_SL);
+        //        line_sl_1_y[1] = line_sl_1_y[0];
+        //        line_sl_2_y[0] = price + (price_percent * 2 * LINE_SL);
+        //        line_sl_2_y[1] = line_sl_2_y[0];
+        //        line_sl_3_y[0] = price + (price_percent * 3 * LINE_SL);
+        //        line_sl_3_y[1] = line_sl_3_y[0];
+        //        line_sl_1_scatter = plt.Plot.AddScatterLines(line_x, line_sl_1_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_1_y[0] + " - 1 stop loss price");
+        //        line_sl_1_scatter.YAxisIndex = 1;
+        //        line_sl_2_scatter = plt.Plot.AddScatterLines(line_x, line_sl_2_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_2_y[0] + " - 2 stop loss price");
+        //        line_sl_2_scatter.YAxisIndex = 1;
+        //        line_sl_3_scatter = plt.Plot.AddScatterLines(line_x, line_sl_3_y, Color.Red, lineStyle: LineStyle.Dash, label: line_sl_3_y[0] + " - 3 stop loss price");
+        //        line_sl_3_scatter.YAxisIndex = 1;
+        //    }
+        //}
         #endregion
 
         #region - Chart Line Open Order  -
         private void LINE_OPEN_TextChanged(object sender, TextChangedEventArgs e)
         {
-            NewLines();
+            NewLines(0);
         }
-        private void NewLines()
+        private void NewLines(double price_order)
         {
-            NewLineOpen();
-            NewLineSL();
+            NewLineOpen(price_order);
             NewLineTP();
             plt.Refresh();
         }
@@ -221,40 +262,48 @@ namespace BinanceAlgorithmVova
         double[] line_open_1_y = new double[2];
         double[] line_open_2_y = new double[2];
         double[] line_open_3_y = new double[2];
-        private void NewLineOpen()
+        private void NewLineOpen(double price_order)
         {
-            if (LINE_OPEN != 0 && list_candle_ohlc.Count > 0)
+            try
             {
+                if (LINE_OPEN != 0 && list_candle_ohlc.Count > 0)
+                {
 
-                Array.Clear(line_x, 0, 2);
-                Array.Clear(line_open_y, 0, 2);
-                Array.Clear(line_open_1_y, 0, 2);
-                Array.Clear(line_open_2_y, 0, 2);
-                Array.Clear(line_open_3_y, 0, 2);
-                plt.Plot.Remove(line_open_scatter);
-                plt.Plot.Remove(line_open_1_scatter);
-                plt.Plot.Remove(line_open_2_scatter);
-                plt.Plot.Remove(line_open_3_scatter);
-                price = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
-                price_percent = price / 1000 * LINE_OPEN;
-                line_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
-                line_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
-                line_open_y[0] = price;
-                line_open_y[1] = price;
-                line_open_1_y[0] = price + price_percent;
-                line_open_1_y[1] = line_open_1_y[0];
-                line_open_2_y[0] = price + price_percent + price_percent;
-                line_open_2_y[1] = line_open_2_y[0];
-                line_open_3_y[0] = price + price_percent + price_percent + price_percent;
-                line_open_3_y[1] = line_open_3_y[0];
-                line_open_scatter = plt.Plot.AddScatterLines(line_x, line_open_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: price + " - open order price");
-                line_open_scatter.YAxisIndex = 1;
-                line_open_1_scatter = plt.Plot.AddScatterLines(line_x, line_open_1_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_1_y[0] + " - 1 open order price");
-                line_open_1_scatter.YAxisIndex = 1;
-                line_open_2_scatter = plt.Plot.AddScatterLines(line_x, line_open_2_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_2_y[0] + " - 2 open order price");
-                line_open_2_scatter.YAxisIndex = 1;
-                line_open_3_scatter = plt.Plot.AddScatterLines(line_x, line_open_3_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_3_y[0] + " - 3 open order price");
-                line_open_3_scatter.YAxisIndex = 1;
+                    Array.Clear(line_x, 0, 2);
+                    Array.Clear(line_open_y, 0, 2);
+                    Array.Clear(line_open_1_y, 0, 2);
+                    Array.Clear(line_open_2_y, 0, 2);
+                    Array.Clear(line_open_3_y, 0, 2);
+                    plt.Plot.Remove(line_open_scatter);
+                    plt.Plot.Remove(line_open_1_scatter);
+                    plt.Plot.Remove(line_open_2_scatter);
+                    plt.Plot.Remove(line_open_3_scatter);
+                    if (price_order == 0) price = list_candle_ohlc[list_candle_ohlc.Count - 1].Close;
+                    else price = price_order;
+                    price_percent = price / 1000 * LINE_OPEN;
+                    line_x[0] = list_candle_ohlc[0].DateTime.ToOADate();
+                    line_x[1] = list_candle_ohlc[list_candle_ohlc.Count - 1].DateTime.ToOADate();
+                    line_open_y[0] = price;
+                    line_open_y[1] = price;
+                    line_open_1_y[0] = price + price_percent;
+                    line_open_1_y[1] = line_open_1_y[0];
+                    line_open_2_y[0] = price + price_percent + price_percent;
+                    line_open_2_y[1] = line_open_2_y[0];
+                    line_open_3_y[0] = price + price_percent + price_percent + price_percent;
+                    line_open_3_y[1] = line_open_3_y[0];
+                    line_open_scatter = plt.Plot.AddScatterLines(line_x, line_open_y, Color.White, lineStyle: LineStyle.Dash, label: price + " - open order price");
+                    line_open_scatter.YAxisIndex = 1;
+                    line_open_1_scatter = plt.Plot.AddScatterLines(line_x, line_open_1_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_1_y[0] + " - 1 open order price");
+                    line_open_1_scatter.YAxisIndex = 1;
+                    line_open_2_scatter = plt.Plot.AddScatterLines(line_x, line_open_2_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_2_y[0] + " - 2 open order price");
+                    line_open_2_scatter.YAxisIndex = 1;
+                    line_open_3_scatter = plt.Plot.AddScatterLines(line_x, line_open_3_y, Color.LightGreen, lineStyle: LineStyle.Dash, label: line_open_3_y[0] + " - 3 open order price");
+                    line_open_3_scatter.YAxisIndex = 1;
+                }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"NewLineOpen {c.Message}");
             }
         }
         private void LoadLineOpen()
@@ -279,39 +328,53 @@ namespace BinanceAlgorithmVova
         #region - Trede History -
         private void TAB_CONTROL_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            History();
-            double sum_total = 0;
-            int count_orders = 0;
-            foreach (var it in ConnectHistoryOrder.Get())
+            try
             {
-                history_order.Insert(0, it);
-                sum_total += it.total;
-                count_orders++;
+                History();
+                double sum_total = 0;
+                int count_orders = 0;
+                foreach (var it in ConnectHistoryOrder.Get())
+                {
+                    history_order.Insert(0, it);
+                    sum_total += it.total;
+                    count_orders++;
+                }
+                COUNT_ORDERS.Content = count_orders;
+                SUM_TOTAL.Content = sum_total;
+                if (sum_total > 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Green;
+                else if (sum_total < 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Red;
+                HISTORY_ORDER.Items.Refresh();
             }
-            COUNT_ORDERS.Content = count_orders;
-            SUM_TOTAL.Content = sum_total;
-            if (sum_total > 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Green;
-            else if (sum_total < 0) SUM_TOTAL.Foreground = System.Windows.Media.Brushes.Red;
-            HISTORY_ORDER.Items.Refresh();
+            catch (Exception c)
+            {
+                ErrorText.Add($"TAB_CONTROL_MouseLeftButtonUp {c.Message}");
+            }
         }
 
         private void History()
         {
-            history_order.Clear();
-            ConnectHistoryOrder.DeleteAll();
-            List<BinanceFuturesOrder> orders = ConnectOrder.Get();
-            int i = 0;
-            foreach (var it in ConnectOrder.Get())
+            try
             {
-                if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
+                history_order.Clear();
+                ConnectHistoryOrder.DeleteAll();
+                List<BinanceFuturesOrder> orders = ConnectOrder.Get();
+                int i = 0;
+                foreach (var it in ConnectOrder.Get())
                 {
-                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
+                    if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Sell)
+                    {
+                        ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
+                    }
+                    else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
+                    {
+                        ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
+                    }
+                    i++;
                 }
-                else if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Buy)
-                {
-                    ConnectHistoryOrder.Insert(new HistoryOrder(it.CreateTime, it.Symbol, Convert.ToDouble(orders[i - 1].AvgPrice), Convert.ToDouble(it.AvgPrice), Convert.ToDouble(it.Quantity), it.PositionSide));
-                }
-                i++;
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"History {c.Message}");
             }
         }
         #endregion
@@ -327,54 +390,61 @@ namespace BinanceAlgorithmVova
         List<double> short_close_order_y = new List<double>();
         private void InfoOrderAsunc(DateTime start_time)
         {
-            long_open_order_x.Clear();
-            long_open_order_y.Clear();
-            long_close_order_x.Clear();
-            long_close_order_y.Clear();
-            short_open_order_x.Clear();
-            short_open_order_y.Clear();
-            short_close_order_x.Clear();
-            short_close_order_y.Clear();
-            string symbol = LIST_SYMBOLS.Text;
-            if (symbol != "")
+            try
             {
-                ConnectOrder.DeleteAll();
-                List<BinanceFuturesOrder> list = Algorithm.Algorithm.InfoOrder(socket, symbol, start_time);
-                foreach(var it in list)
+                long_open_order_x.Clear();
+                long_open_order_y.Clear();
+                long_close_order_x.Clear();
+                long_close_order_y.Clear();
+                short_open_order_x.Clear();
+                short_open_order_y.Clear();
+                short_close_order_x.Clear();
+                short_close_order_y.Clear();
+                string symbol = LIST_SYMBOLS.Text;
+                if (symbol != "")
                 {
-                    if(it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
+                    ConnectOrder.DeleteAll();
+                    List<BinanceFuturesOrder> list = Algorithm.Algorithm.InfoOrder(socket, symbol, start_time);
+                    foreach (var it in list)
                     {
-                        long_open_order_x.Add(it.CreateTime.ToOADate());
-                        long_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        foreach (var iterator in list)
+                        if (it.PositionSide == PositionSide.Long && it.Side == OrderSide.Buy)
                         {
-                            if(iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Long && iterator.Side == OrderSide.Sell && iterator.Quantity == it.Quantity)
+                            long_open_order_x.Add(it.CreateTime.ToOADate());
+                            long_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                            foreach (var iterator in list)
                             {
-                                ConnectOrder.Insert(it);
-                                long_close_order_x.Add(iterator.CreateTime.ToOADate());
-                                long_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
-                                ConnectOrder.Insert(iterator);
-                                break;
+                                if (iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Long && iterator.Side == OrderSide.Sell && iterator.Quantity == it.Quantity)
+                                {
+                                    ConnectOrder.Insert(it);
+                                    long_close_order_x.Add(iterator.CreateTime.ToOADate());
+                                    long_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
+                                    ConnectOrder.Insert(iterator);
+                                    break;
+                                }
                             }
                         }
-                    }
-                    if(it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
-                    {
-                        short_open_order_x.Add(it.CreateTime.ToOADate());
-                        short_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
-                        foreach (var iterator in list)
+                        if (it.PositionSide == PositionSide.Short && it.Side == OrderSide.Sell)
                         {
-                            if (iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Short && iterator.Side == OrderSide.Buy && iterator.Quantity == it.Quantity)
+                            short_open_order_x.Add(it.CreateTime.ToOADate());
+                            short_open_order_y.Add(Double.Parse(it.AvgPrice.ToString()));
+                            foreach (var iterator in list)
                             {
-                                ConnectOrder.Insert(it);
-                                short_close_order_x.Add(iterator.CreateTime.ToOADate());
-                                short_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
-                                ConnectOrder.Insert(iterator);
-                                break;
+                                if (iterator.CreateTime > it.CreateTime && iterator.PositionSide == PositionSide.Short && iterator.Side == OrderSide.Buy && iterator.Quantity == it.Quantity)
+                                {
+                                    ConnectOrder.Insert(it);
+                                    short_close_order_x.Add(iterator.CreateTime.ToOADate());
+                                    short_close_order_y.Add(Double.Parse(iterator.AvgPrice.ToString()));
+                                    ConnectOrder.Insert(iterator);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"InfoOrderAsunc {c.Message}");
             }
         }
         #endregion
@@ -436,139 +506,160 @@ namespace BinanceAlgorithmVova
 
         private void ReloadChart()
         {
-            if (socket != null && SMA_LONG > 1 && COUNT_CANDLES > 0 && COUNT_CANDLES > SMA_LONG && COUNT_CANDLES < 500)
+            try
             {
-                StopAsync();
-                ConnectCandle.DeleteAll();
-                LoadingCandlesToDB();
-                if (ONLINE_CHART) StartKlineAsync();
-                LoadingCandlesToChart();
-                NewLines();
-                LoadingChart();
-                plt.Plot.AxisAuto();
-                plt.Refresh();
-                ReloadSettings();
+                if (socket != null && SMA_LONG > 1 && COUNT_CANDLES > 0 && COUNT_CANDLES > SMA_LONG && COUNT_CANDLES < 500)
+                {
+                    StopAsync();
+                    ConnectCandle.DeleteAll();
+                    LoadingCandlesToDB();
+                    if (ONLINE_CHART) StartKlineAsync();
+                    LoadingCandlesToChart();
+                    NewLines(0);
+                    LoadingChart();
+                    plt.Plot.AxisAuto();
+                    plt.Refresh();
+                    ReloadSettings();
+                }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"ReloadChart {c.Message}");
             }
         }
         private void ReloadSmaChart()
         {
-            if (socket != null && SMA_LONG > 1 && COUNT_CANDLES > 0 && COUNT_CANDLES > SMA_LONG && COUNT_CANDLES < 500 && SMA_LONG < list_candle_ohlc.Count - 1)
+            try
             {
-                plt.Plot.Remove(sma_long_plot);
-                plt.Plot.Remove(bolinger_lower);
-                plt.Plot.Remove(bolinger_upper);
-                sma_long = candlePlot.GetBollingerBands(SMA_LONG);
-                sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
-                sma_long_plot.YAxisIndex = 1;
-                bolinger_lower = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
-                bolinger_lower.YAxisIndex = 1;
-                bolinger_upper = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
-                bolinger_upper.YAxisIndex = 1;
-                plt.Refresh();
+                if (socket != null && SMA_LONG > 1 && COUNT_CANDLES > 0 && COUNT_CANDLES > SMA_LONG && COUNT_CANDLES < 500 && SMA_LONG < list_candle_ohlc.Count - 1)
+                {
+                    plt.Plot.Remove(sma_long_plot);
+                    plt.Plot.Remove(bolinger_lower);
+                    plt.Plot.Remove(bolinger_upper);
+                    sma_long = candlePlot.GetBollingerBands(SMA_LONG);
+                    sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
+                    sma_long_plot.YAxisIndex = 1;
+                    bolinger_lower = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
+                    bolinger_lower.YAxisIndex = 1;
+                    bolinger_upper = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
+                    bolinger_upper.YAxisIndex = 1;
+                    plt.Refresh();
+                }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"LoadingCandlesToChart {c.Message}");
             }
         }
         public (double[] xs, double[] ys, double[] lower, double[] upper) sma_long;
         private void LoadingChart()
         {
-            if (COUNT_CANDLES > 0)
+            try
             {
-                if (SMA_LONG > 1 && SMA_LONG < list_candle_ohlc.Count - 1)
+                if (COUNT_CANDLES > 0)
                 {
+                    if (SMA_LONG > 1 && SMA_LONG < list_candle_ohlc.Count - 1)
+                    {
 
-                    plt.Plot.Remove(candlePlot);
-                    plt.Plot.Remove(sma_long_plot);
-                    plt.Plot.Remove(bolinger_lower);
-                    plt.Plot.Remove(bolinger_upper);
-                    plt.Plot.Remove(order_long_open_plot);
-                    plt.Plot.Remove(order_long_close_plot);
-                    plt.Plot.Remove(order_short_open_plot);
-                    plt.Plot.Remove(order_short_close_plot);
-                    // Candles
-                    candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
-                    candlePlot.YAxisIndex = 1;
-                    // Line open order
-                    LoadLineOpen();
-                    //// Line stop loss
-                    //LoadLineSL();
-                    //// Line take profit
-                    //LoadLineTP();
-                    // Sma
-                    sma_long = candlePlot.GetBollingerBands(SMA_LONG);
-                    sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
-                    sma_long_plot.YAxisIndex = 1;
-                    // Bolinger lower
-                    bolinger_lower = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
-                    bolinger_lower.YAxisIndex = 1;
-                    // Bolinger upper
-                    bolinger_upper = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
-                    bolinger_upper.YAxisIndex = 1;
-                    // Orders
-                    if (order_long_lines_vertical.Count > 0) foreach (var it in order_long_lines_vertical) plt.Plot.Remove(it);
-                    if (order_long_lines_horisontal.Count > 0) foreach (var it in order_long_lines_horisontal) plt.Plot.Remove(it);
-                    if (order_short_lines_vertical.Count > 0) foreach (var it in order_short_lines_vertical) plt.Plot.Remove(it);
-                    if (order_short_lines_horisontal.Count > 0) foreach (var it in order_short_lines_horisontal) plt.Plot.Remove(it);
-                    
-                    
-                    if (long_close_order_x.Count != 0 && long_close_order_y.Count != 0)
-                    {
-                        order_long_close_plot = plt.Plot.AddScatter(long_close_order_x.ToArray(), long_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
-                        order_long_close_plot.YAxisIndex = 1;
-                        order_long_lines_vertical.Clear();
-                        for (int i = 0; i < long_close_order_x.Count; i++)
-                        {
-                            double[] x = { long_open_order_x[i], long_open_order_x[i] };
-                            double[] y = { long_open_order_y[i], long_close_order_y[i] };
-                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
-                            scatter.YAxisIndex = 1;
-                            order_long_lines_vertical.Add(scatter);
-                        }
-                        order_long_lines_horisontal.Clear();
-                        for (int i = 0; i < long_close_order_x.Count; i++)
-                        {
-                            double[] x = { long_open_order_x[i], long_close_order_x[i] };
-                            double[] y = { long_close_order_y[i], long_close_order_y[i] };
-                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
-                            scatter.YAxisIndex = 1;
-                            order_long_lines_horisontal.Add(scatter);
-                        }
-                    }
-                    if (long_open_order_x.Count != 0 && long_open_order_y.Count != 0)
-                    {
-                        order_long_open_plot = plt.Plot.AddScatter(long_open_order_x.ToArray(), long_open_order_y.ToArray(), color: Color.Green, lineWidth: 0, markerSize: 8);
-                        order_long_open_plot.YAxisIndex = 1;
-                    }
-                    if (short_close_order_x.Count != 0 && short_close_order_y.Count != 0)
-                    {
-                        order_short_close_plot = plt.Plot.AddScatter(short_close_order_x.ToArray(), short_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
-                        order_short_close_plot.YAxisIndex = 1;
-                        order_short_lines_vertical.Clear();
-                        for (int i = 0; i < short_close_order_x.Count; i++)
-                        {
-                            double[] x = { short_close_order_x[i], short_close_order_x[i] };
-                            double[] y = { short_open_order_y[i], short_close_order_y[i] };
-                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
-                            scatter.YAxisIndex = 1;
-                            order_short_lines_vertical.Add(scatter);
-                        }
-                        order_short_lines_horisontal.Clear();
-                        for (int i = 0; i < short_close_order_x.Count; i++)
-                        {
-                            double[] x = { short_open_order_x[i], short_close_order_x[i] };
-                            double[] y = { short_open_order_y[i], short_open_order_y[i] };
-                            ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
-                            scatter.YAxisIndex = 1;
-                            order_short_lines_horisontal.Add(scatter);
-                        }
-                    }
-                    if (short_open_order_x.Count != 0 && short_open_order_y.Count != 0)
-                    {
-                        order_short_open_plot = plt.Plot.AddScatter(short_open_order_x.ToArray(), short_open_order_y.ToArray(), color: Color.DarkRed, lineWidth: 0, markerSize: 8);
-                        order_short_open_plot.YAxisIndex = 1;
-                    }
+                        plt.Plot.Remove(candlePlot);
+                        plt.Plot.Remove(sma_long_plot);
+                        plt.Plot.Remove(bolinger_lower);
+                        plt.Plot.Remove(bolinger_upper);
+                        plt.Plot.Remove(order_long_open_plot);
+                        plt.Plot.Remove(order_long_close_plot);
+                        plt.Plot.Remove(order_short_open_plot);
+                        plt.Plot.Remove(order_short_close_plot);
+                        // Candles
+                        candlePlot = plt.Plot.AddCandlesticks(list_candle_ohlc.ToArray());
+                        candlePlot.YAxisIndex = 1;
+                        // Line open order
+                        LoadLineOpen();
+                        //// Line stop loss
+                        //LoadLineSL();
+                        //// Line take profit
+                        //LoadLineTP();
+                        // Sma
+                        sma_long = candlePlot.GetBollingerBands(SMA_LONG);
+                        sma_long_plot = plt.Plot.AddScatterLines(sma_long.xs, sma_long.ys, Color.Cyan, 2, label: SMA_LONG + " minute SMA");
+                        sma_long_plot.YAxisIndex = 1;
+                        // Bolinger lower
+                        bolinger_lower = plt.Plot.AddScatterLines(sma_long.xs, sma_long.lower, Color.Blue, lineStyle: LineStyle.Dash);
+                        bolinger_lower.YAxisIndex = 1;
+                        // Bolinger upper
+                        bolinger_upper = plt.Plot.AddScatterLines(sma_long.xs, sma_long.upper, Color.Blue, lineStyle: LineStyle.Dash);
+                        bolinger_upper.YAxisIndex = 1;
+                        // Orders
+                        if (order_long_lines_vertical.Count > 0) foreach (var it in order_long_lines_vertical) plt.Plot.Remove(it);
+                        if (order_long_lines_horisontal.Count > 0) foreach (var it in order_long_lines_horisontal) plt.Plot.Remove(it);
+                        if (order_short_lines_vertical.Count > 0) foreach (var it in order_short_lines_vertical) plt.Plot.Remove(it);
+                        if (order_short_lines_horisontal.Count > 0) foreach (var it in order_short_lines_horisontal) plt.Plot.Remove(it);
 
-                    StartAlgorithm();
 
+                        if (long_close_order_x.Count != 0 && long_close_order_y.Count != 0)
+                        {
+                            order_long_close_plot = plt.Plot.AddScatter(long_close_order_x.ToArray(), long_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
+                            order_long_close_plot.YAxisIndex = 1;
+                            order_long_lines_vertical.Clear();
+                            for (int i = 0; i < long_close_order_x.Count; i++)
+                            {
+                                double[] x = { long_open_order_x[i], long_open_order_x[i] };
+                                double[] y = { long_open_order_y[i], long_close_order_y[i] };
+                                ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                                scatter.YAxisIndex = 1;
+                                order_long_lines_vertical.Add(scatter);
+                            }
+                            order_long_lines_horisontal.Clear();
+                            for (int i = 0; i < long_close_order_x.Count; i++)
+                            {
+                                double[] x = { long_open_order_x[i], long_close_order_x[i] };
+                                double[] y = { long_close_order_y[i], long_close_order_y[i] };
+                                ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                                scatter.YAxisIndex = 1;
+                                order_long_lines_horisontal.Add(scatter);
+                            }
+                        }
+                        if (long_open_order_x.Count != 0 && long_open_order_y.Count != 0)
+                        {
+                            order_long_open_plot = plt.Plot.AddScatter(long_open_order_x.ToArray(), long_open_order_y.ToArray(), color: Color.Green, lineWidth: 0, markerSize: 8);
+                            order_long_open_plot.YAxisIndex = 1;
+                        }
+                        if (short_close_order_x.Count != 0 && short_close_order_y.Count != 0)
+                        {
+                            order_short_close_plot = plt.Plot.AddScatter(short_close_order_x.ToArray(), short_close_order_y.ToArray(), color: Color.Orange, lineWidth: 0, markerSize: 10, markerShape: MarkerShape.eks);
+                            order_short_close_plot.YAxisIndex = 1;
+                            order_short_lines_vertical.Clear();
+                            for (int i = 0; i < short_close_order_x.Count; i++)
+                            {
+                                double[] x = { short_close_order_x[i], short_close_order_x[i] };
+                                double[] y = { short_open_order_y[i], short_close_order_y[i] };
+                                ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                                scatter.YAxisIndex = 1;
+                                order_short_lines_vertical.Add(scatter);
+                            }
+                            order_short_lines_horisontal.Clear();
+                            for (int i = 0; i < short_close_order_x.Count; i++)
+                            {
+                                double[] x = { short_open_order_x[i], short_close_order_x[i] };
+                                double[] y = { short_open_order_y[i], short_open_order_y[i] };
+                                ScatterPlot scatter = plt.Plot.AddScatterLines(x, y, Color.Orange, lineStyle: LineStyle.Dash);
+                                scatter.YAxisIndex = 1;
+                                order_short_lines_horisontal.Add(scatter);
+                            }
+                        }
+                        if (short_open_order_x.Count != 0 && short_open_order_y.Count != 0)
+                        {
+                            order_short_open_plot = plt.Plot.AddScatter(short_open_order_x.ToArray(), short_open_order_y.ToArray(), color: Color.DarkRed, lineWidth: 0, markerSize: 8);
+                            order_short_open_plot.YAxisIndex = 1;
+                        }
+
+                        StartAlgorithm();
+
+                    }
                 }
+            }
+            catch (Exception c)
+            {
+                ErrorText.Add($"LoadingChart {c.Message}");
             }
         }
 
@@ -580,96 +671,143 @@ namespace BinanceAlgorithmVova
 
         public decimal open_quantity;
         public long open_order_id = 0;
+        public decimal price_open_order;
+        public decimal opposite_open_quantity;
+        public long opposite_open_order_id = 0;
         private void Bet_Click(object sender, RoutedEventArgs e)
         {
-            string symbol = LIST_SYMBOLS.Text;
-            if (START_BET && USDT_BET >= 20m && PRICE_SYMBOL > 0 && LINE_OPEN < 0 && open_order_id == 0 && LONG)
+            try
             {
-                NewLines();
-                open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
-                open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Long);
-                if (open_order_id != 0) start = true;
-                new SoundPlayer(Properties.Resources.wav_2).Play();
+                string symbol = LIST_SYMBOLS.Text;
+                if (START_BET && USDT_BET >= 20m && PRICE_SYMBOL > 0 && LINE_OPEN < 0 && open_order_id == 0 && LONG)
+                {
+
+                    open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
+                    open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                    opposite_open_quantity = Math.Round(open_quantity * 2, 1);
+                    opposite_open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Long);
+                    if (open_order_id != 0 && opposite_open_order_id != 0)
+                    {
+                        start = true;
+                        price_open_order = Algorithm.Algorithm.InfoOrderId(socket, symbol, open_order_id);
+                        NewLines(Double.Parse(price_open_order.ToString()));
+                    }
+                    new SoundPlayer(Properties.Resources.wav_2).Play();
+                }
+                else if (START_BET && USDT_BET >= 20m && PRICE_SYMBOL > 0m && LINE_OPEN > 0 && open_order_id == 0 && SHORT)
+                {
+                    open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
+                    open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                    opposite_open_quantity = Math.Round(open_quantity * 2, 1);
+                    opposite_open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Short);
+                    if (open_order_id != 0 && opposite_open_order_id != 0)
+                    {
+                        start = true;
+                        price_open_order = Algorithm.Algorithm.InfoOrderId(socket, symbol, open_order_id);
+                        NewLines(Double.Parse(price_open_order.ToString()));
+                    }
+                    new SoundPlayer(Properties.Resources.wav_2).Play();
+                }
             }
-            else if (START_BET && USDT_BET >= 20m && PRICE_SYMBOL > 0m && LINE_OPEN > 0 && open_order_id == 0 && SHORT)
+            catch (Exception c)
             {
-                NewLines();
-                open_quantity = Math.Round(USDT_BET / PRICE_SYMBOL, 1);
-                open_order_id = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Short);
-                if (open_order_id != 0) start = true;
-                new SoundPlayer(Properties.Resources.wav_2).Play();
+                ErrorText.Add($"Bet_Click {c.Message}");
             }
         }
         
         private void CloseOrders_Click(object sender, RoutedEventArgs e)
         {
-            string symbol = LIST_SYMBOLS.Text;
-            if (LONG && open_order_id != 0)
+            try
             {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
-                open_order_id = 0;
-                open_quantity = 0m;
-                SoundCloseOrder();
+                string symbol = LIST_SYMBOLS.Text;
+                if (LONG && open_order_id != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                    open_order_id = 0;
+                    open_quantity = 0m;
+                    SoundCloseOrder();
+                }
+                if (LONG && opposite_open_order_id != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Long);
+                    opposite_open_order_id = 0;
+                    opposite_open_quantity = 0m;
+                    SoundCloseOrder();
+                }
+                if (LONG && order_id_1 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1, PositionSide.Short);
+                    order_id_1 = 0;
+                    quantity_1 = 0m;
+                    SoundCloseOrder();
+                }
+                if (LONG && order_id_2 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Short);
+                    order_id_2 = 0;
+                    quantity_2 = 0m;
+                    SoundCloseOrder();
+                }
+                if (LONG && order_id_3 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Short);
+                    order_id_3 = 0;
+                    quantity_3 = 0m;
+                    SoundCloseOrder();
+                }
+                if (SHORT && open_order_id != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                    open_order_id = 0;
+                    open_quantity = 0m;
+                    SoundCloseOrder();
+                }
+                if (SHORT && opposite_open_order_id != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Short);
+                    opposite_open_order_id = 0;
+                    opposite_open_quantity = 0m;
+                    SoundCloseOrder();
+                }
+                if (SHORT && order_id_1 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1, PositionSide.Long);
+                    order_id_1 = 0;
+                    quantity_1 = 0m;
+                    SoundCloseOrder();
+                }
+                if (SHORT && order_id_2 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Long);
+                    order_id_2 = 0;
+                    quantity_2 = 0m;
+                    SoundCloseOrder();
+                }
+                if (SHORT && order_id_3 != 0)
+                {
+                    Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Long);
+                    order_id_3 = 0;
+                    quantity_3 = 0m;
+                    SoundCloseOrder();
+                }
+                NewLineSLClear();
+                start = false;
             }
-            if (LONG && order_id_1 != 0)
+            catch (Exception c)
             {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1, PositionSide.Short);
-                order_id_1 = 0;
-                quantity_1 = 0m;
-                SoundCloseOrder();
+                ErrorText.Add($"CloseOrders_Click {c.Message}");
             }
-            if (LONG && order_id_2 != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Short);
-                order_id_2 = 0;
-                quantity_2 = 0m;
-                SoundCloseOrder();
-            }
-            if (LONG && order_id_3 != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Short);
-                order_id_3 = 0;
-                quantity_3 = 0m;
-                SoundCloseOrder();
-            }
-            if (SHORT && open_order_id != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
-                open_order_id = 0;
-                open_quantity = 0m;
-                SoundCloseOrder();
-            }
-            if (SHORT && order_id_1 != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1, PositionSide.Long);
-                order_id_1 = 0;
-                quantity_1 = 0m;
-                SoundCloseOrder();
-            }
-            if (SHORT && order_id_2 != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Long);
-                order_id_2 = 0;
-                quantity_2 = 0m;
-                SoundCloseOrder();
-            }
-            if (SHORT && order_id_3 != 0)
-            {
-                Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Long);
-                order_id_3 = 0;
-                quantity_3 = 0m;
-                SoundCloseOrder();
-            }
-            start = false;
         }
         #endregion
         private void ReloadSettings()
         {
             open_order_id = 0;
+            opposite_open_order_id = 0;
             order_id_1 = 0;
             order_id_2 = 0;
             order_id_3 = 0;
             open_quantity = 0m;
+            opposite_open_quantity = 0m;
             quantity_1 = 0m;
             quantity_2 = 0m;
             quantity_3 = 0m;
@@ -678,6 +816,9 @@ namespace BinanceAlgorithmVova
         public decimal quantity_1 = 0m;
         public decimal quantity_2 = 0m;
         public decimal quantity_3 = 0m;
+        public decimal price_order_1;
+        public decimal price_order_2;
+        public decimal price_order_3;
         public long order_id_1 = 0;
         public long order_id_2 = 0;
         public long order_id_3 = 0;
@@ -695,18 +836,27 @@ namespace BinanceAlgorithmVova
                         quantity_1 = Math.Round(open_quantity * 0.75m, 1);
                         order_id_1 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1, PositionSide.Long);
                         SoundOpenOrder();
+                        price_order_1 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_1);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1)) / (quantity_1 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if (SHORT && order_id_2 == 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_open_2_y[0])
                     {
                         quantity_2 = Math.Round(open_quantity * 0.6m, 1);
                         order_id_2 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Long);
                         SoundOpenOrder();
+                        price_order_2 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_2);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1) + (quantity_2 * price_order_2)) / (quantity_1 + quantity_2 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if (SHORT && order_id_3 == 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_open_3_y[0])
                     {
                         quantity_3 = Math.Round(open_quantity * 0.5m, 1);
                         order_id_3 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Long);
                         SoundOpenOrder();
+                        price_order_3 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_3);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1) + (quantity_2 * price_order_2) + (quantity_3 * price_order_3)) / (quantity_1 + quantity_2 + quantity_3 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if(SHORT && order_id_1 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_sl_1_y[0])
                     {
@@ -714,20 +864,35 @@ namespace BinanceAlgorithmVova
                         quantity_1 = 0m;
                         order_id_1 = 0; 
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
-                    if (SHORT && order_id_2 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_sl_2_y[0])
+                    if (SHORT && order_id_1 != 0 && order_id_2 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_sl_1_y[0])
                     {
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1 + quantity_2, PositionSide.Long);
+                        quantity_1 = 0m;
+                        order_id_1 = 0;
                         quantity_2 = 0m;
                         order_id_2 = 0;
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
-                    if (SHORT && order_id_3 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_sl_3_y[0])
+                    if (SHORT && order_id_1 != 0 && order_id_2 != 0 && order_id_3 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_sl_1_y[0])
                     {
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1 + quantity_2 + quantity_3, PositionSide.Long);
+                        quantity_1 = 0m;
+                        order_id_1 = 0;
+                        quantity_2 = 0m;
+                        order_id_2 = 0;
                         quantity_3 = 0m;
                         order_id_3 = 0;
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
                     // Long
                     if(LONG && order_id_1 == 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_open_1_y[0])
@@ -735,18 +900,27 @@ namespace BinanceAlgorithmVova
                         quantity_1 = Math.Round(open_quantity * 0.75m, 1); 
                         order_id_1 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1, PositionSide.Short);
                         SoundOpenOrder();
+                        price_order_1 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_1);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1)) / (quantity_1 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if (LONG && order_id_2 == 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_open_2_y[0])
                     {
                         quantity_2 = Math.Round(open_quantity * 0.6m, 1);
                         order_id_2 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Short);
                         SoundOpenOrder();
+                        price_order_2 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_2);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1) + (quantity_2 * price_order_2)) / (quantity_1 + quantity_2 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if (LONG && order_id_3 == 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_open_3_y[0])
                     {
                         quantity_3 = Math.Round(open_quantity * 0.5m, 1);
                         order_id_3 = Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Short);
                         SoundOpenOrder();
+                        price_order_3 = Algorithm.Algorithm.InfoOrderId(socket, symbol, order_id_3);
+                        decimal average = Math.Round(((open_quantity * price_open_order) + (quantity_1 * price_order_1) + (quantity_2 * price_order_2) + (quantity_3 * price_order_3)) / (quantity_1 + quantity_2 + quantity_3 + open_quantity), 6);
+                        NewLineSL(Decimal.ToDouble(average));
                     }
                     if (LONG && order_id_1 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_sl_1_y[0])
                     {
@@ -754,30 +928,48 @@ namespace BinanceAlgorithmVova
                         quantity_1 = 0m;
                         order_id_1 = 0;
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
-                    if (LONG && order_id_2 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_sl_2_y[0])
+                    if (LONG && order_id_1 != 0 && order_id_2 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_sl_1_y[0])
                     {
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1 + quantity_2, PositionSide.Short);
+                        quantity_1 = 0m;
+                        order_id_1 = 0;
                         quantity_2 = 0m;
                         order_id_2 = 0;
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
-                    if (LONG && order_id_3 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_sl_3_y[0])
+                    if (LONG && order_id_1 != 0 && order_id_2 != 0 && order_id_3 != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_sl_1_y[0])
                     {
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1 + quantity_2 + quantity_3, PositionSide.Short);
+                        quantity_1 = 0m;
+                        order_id_1 = 0;
+                        quantity_2 = 0m;
+                        order_id_2 = 0;
                         quantity_3 = 0m;
                         order_id_3 = 0;
                         SoundCloseOrder();
+                        price_open_order = Decimal.Parse(line_sl_1_y[0].ToString());
+                        NewLines(line_sl_1_y[0]);
+                        NewLineSLClear();
                     }
                     // Take profit
-                    if(SHORT && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_tp_1_y[0])
+                    if(SHORT && open_order_id != 0 && opposite_open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_tp_1_y[0])
                     {
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_1, PositionSide.Long);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_2, PositionSide.Long);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, quantity_3, PositionSide.Long);
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Short);
                         open_quantity = 0m;
                         open_order_id = 0;
+                        opposite_open_order_id = 0;
+                        opposite_open_quantity = 0m;
                         quantity_1 = 0m;
                         order_id_1 = 0;
                         quantity_2 = 0m;
@@ -786,32 +978,44 @@ namespace BinanceAlgorithmVova
                         order_id_3 = 0;
                         SoundCloseOrder();
                         start = false;
+                        NewLineSLClear();
                     }
-                    if (SHORT && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_tp_2_y[0])
-                    {
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
-                        open_quantity = 0m;
-                        open_order_id = 0;
-                        SoundCloseOrder();
-                        start = false;
-                    }
-                    if(LONG && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_tp_2_y[0])
+                    if (SHORT && open_order_id != 0 && opposite_open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_tp_2_y[0])
                     {
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Short);
                         open_quantity = 0m;
                         open_order_id = 0;
+                        opposite_open_order_id = 0;
+                        opposite_open_quantity = 0m;
                         SoundCloseOrder();
                         start = false;
+                        NewLineSLClear();
                     }
-                    if (LONG && open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_tp_1_y[0])
+                    if(LONG && open_order_id != 0 && opposite_open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close > line_tp_2_y[0])
+                    {
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Long);
+                        open_quantity = 0m;
+                        open_order_id = 0;
+                        opposite_open_order_id = 0;
+                        opposite_open_quantity = 0m;
+                        SoundCloseOrder();
+                        start = false;
+                        NewLineSLClear();
+                    }
+                    if (LONG && open_order_id != 0 && opposite_open_order_id != 0 && list_candle_ohlc[list_candle_ohlc.Count - 1].Close < line_tp_1_y[0])
                     {
                         decimal quantity_sum = quantity_1 + quantity_2 + quantity_3;
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_1, PositionSide.Short);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_2, PositionSide.Short);
                         Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, quantity_3, PositionSide.Short);
-                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, open_quantity, PositionSide.Long);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Buy, FuturesOrderType.Market, open_quantity, PositionSide.Short);
+                        Algorithm.Algorithm.Order(socket, symbol, OrderSide.Sell, FuturesOrderType.Market, opposite_open_quantity, PositionSide.Long);
                         open_quantity = 0m;
                         open_order_id = 0;
+                        opposite_open_order_id = 0;
+                        opposite_open_quantity = 0m;
                         quantity_1 = 0m;
                         order_id_1 = 0;
                         quantity_2 = 0m;
@@ -820,6 +1024,7 @@ namespace BinanceAlgorithmVova
                         order_id_3 = 0;
                         SoundCloseOrder();
                         start = false;
+                        NewLineSLClear();
                     }
 
                 }

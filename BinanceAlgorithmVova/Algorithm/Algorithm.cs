@@ -2,6 +2,7 @@
 using Binance.Net.Objects.Models.Futures;
 using BinanceAlgorithmVova.Binance;
 using BinanceAlgorithmVova.Errors;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,15 +67,25 @@ namespace BinanceAlgorithmVova.Algorithm
             }
             return result.Data.ToList();
         }
-        public static double InfoOrderLast(Socket socket, string symbol)
+        public static decimal InfoOrderLast(Socket socket, string symbol)
         {
             var result = socket.futures.Trading.GetOrdersAsync(symbol: symbol).Result;
             if (!result.Success)
             {
-                ErrorText.Add($"InfoOrder: {result.Error.Message}");
+                ErrorText.Add($"InfoOrderLast: {result.Error.Message}");
                 return InfoOrderLast(socket, symbol);
             }
-            return Decimal.ToDouble(result.Data.ToList()[0].AvgPrice);
+            return result.Data.ToList()[0].AvgPrice;
+        }
+        public static decimal InfoOrderId(Socket socket, string symbol, long orderId)
+        {
+            var result = socket.futures.Trading.GetOrdersAsync(symbol: symbol, orderId: orderId).Result;
+            if (!result.Success)
+            {
+                ErrorText.Add($"InfoOrderId: {result.Error.Message}");
+                return InfoOrderId(socket, symbol, orderId);
+            }
+            return result.Data.ToList()[0].AvgPrice;
         }
     }
 }

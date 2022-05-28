@@ -18,6 +18,7 @@ namespace BinanceAlgorithmVova.ConnectDB
                 foreach (string it in list) if (it == trial_key) return true;
             }
             return false;
+            //return true;
         }
     }
 }
