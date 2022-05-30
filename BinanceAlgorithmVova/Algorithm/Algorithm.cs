@@ -85,7 +85,13 @@ namespace BinanceAlgorithmVova.Algorithm
                 ErrorText.Add($"InfoOrderId: {result.Error.Message}");
                 return InfoOrderId(socket, symbol, orderId);
             }
-            return result.Data.ToList()[0].AvgPrice;
+            else {
+                foreach(var it in result.Data.ToList())
+                {
+                    if (it.AvgPrice > 0m) return it.AvgPrice;
+                }
+                return InfoOrderId(socket, symbol, orderId);
+            }
         }
     }
 }
